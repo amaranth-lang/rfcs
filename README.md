@@ -57,7 +57,7 @@ The most common preparations for writing and submitting an RFC include talking t
 
 In short, to get a major feature added to Amaranth, one must first get the RFC merged into the RFC repository as a markdown file. At that point the RFC is "active" and may be implemented with the goal of eventual inclusion into Amaranth.
 
-- Fork the RFC repo RFC repository
+- Fork the RFC repository.
 - Copy 0000-template.md to text/0000-my-feature.md (where "my-feature" is descriptive). Don't assign an RFC number yet; This is going to be the PR number and we'll rename the file accordingly if the RFC is accepted.
 - Fill in the RFC. Put care into the details: RFCs that do not present convincing motivation, demonstrate lack of understanding of the design's impact, or are disingenuous about the drawbacks or alternatives tend to be poorly-received.
 - Submit a pull request. As a pull request the RFC will receive design feedback from the larger community, and the author should be prepared to revise it in response.
