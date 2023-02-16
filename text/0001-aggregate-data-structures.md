@@ -11,7 +11,7 @@
 
 Add a rich set of standard library classes for accessing hierarchical aggregate data an idiomatic way, to fill one of the two major use cases of `Record` while avoiding its downsides.
 
-See also #???.
+See also [RFC #2](0002-interfaces.html).
 
 
 ## Motivation
