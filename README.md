@@ -1,4 +1,4 @@
-# Amaranth RFCs
+# Amaranth RFCs - [RFC Book](https://amaranth-lang.org/rfcs/)
 [Amaranth RFCs]: #amaranth-rfcs
 
 The "RFC" (request for comments) process is intended to provide a consistent and controlled path for changes to Amaranth (such as new features) so that all stakeholders can be confident about the direction of the project.
