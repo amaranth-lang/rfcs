@@ -1,0 +1,12 @@
+[book]
+title = "The Amaranth RFC Book"
+
+[output.html]
+no-section-label = true
+git-repository-url = "https://github.com/amaranth-lang/rfcs"
+
+[output.html.search]
+heading-split-level = 0
+
+[output.html.playground]
+runnable = false

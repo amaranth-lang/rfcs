@@ -1,0 +1,29 @@
+on:
+  push:
+    branches:
+      - main
+name: Deploy
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out source code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Install mdbook
+      run: |
+        mkdir mdbook
+        curl -Lf https://github.com/rust-lang/mdBook/releases/download/v0.4.26/mdbook-v0.4.26-x86_64-unknown-linux-gnu.tar.gz | tar -xz --directory=./mdbook
+        echo `pwd`/mdbook >> $GITHUB_PATH
+    - name: Generate book
+      run: |
+        ./generate-book.py
+    - name: Publish book
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        repository-name: amaranth-lang/amaranth-lang.github.io
+        ssh-key: ${{ secrets.PAGES_DEPLOY_KEY }}
+        branch: main
+        folder: book/
+        target-folder: rfcs/
