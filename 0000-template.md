@@ -2,17 +2,19 @@
 - RFC PR: [amaranth-lang/rfcs#0000](https://github.com/amaranth-lang/rfcs/pull/0000)
 - Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
 
-# Summary
+# Name of the RFC
+
+## Summary
 [summary]: #summary
 
 One paragraph explanation of the feature.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Why are we doing this? What use cases does it support? What is the expected outcome?
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Explain the proposal as if it was already included in the language and you were teaching it to another Amaranth programmer. That generally means:
@@ -24,7 +26,7 @@ Explain the proposal as if it was already included in the language and you were 
 - If applicable, describe the differences between teaching this to existing Amaranth programmers and new Amaranth programmers.
 - Discuss how this impacts the ability to read, understand, and maintain Amaranth code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This is the technical portion of the RFC. Explain the design in sufficient detail that:
@@ -35,12 +37,12 @@ This is the technical portion of the RFC. Explain the design in sufficient detai
 
 The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Why should we *not* do this?
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Why is this design the best in the space of possible designs?
@@ -48,7 +50,7 @@ Why should we *not* do this?
 - What is the impact of not doing this?
 - If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Amaranth code easier or harder to read, understand, and maintain?
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Discuss prior art, both the good and the bad, in relation to this proposal. Does this feature exist in other programming languages and what experience have their community had?
@@ -59,14 +61,14 @@ If there is no prior art, that is fine - your ideas are interesting to us whethe
 Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
 Please also take into consideration that Amaranth sometimes intentionally diverges from common language features.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
 - What parts of the design do you expect to resolve through the implementation of this feature?
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Think about what the natural extension and evolution of your proposal would be and how it would affect the language and project as a whole in a holistic way.

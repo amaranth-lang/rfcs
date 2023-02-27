@@ -2,7 +2,7 @@
 - RFC PR: [amaranth-lang/rfcs#0001](https://github.com/amaranth-lang/rfcs/pull/0001)
 - Amaranth Issue: [amaranth-lang/amaranth#748](https://github.com/amaranth-lang/amaranth/issues/748)
 
-# Aggregate data structure library RFC
+# Aggregate data structure library
 
 
 ## Summary

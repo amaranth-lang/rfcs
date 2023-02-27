@@ -2,12 +2,14 @@
 - RFC PR: [amaranth-lang/rfcs#3](https://github.com/amaranth-lang/rfcs/pull/3)
 - Amaranth Issue: [amaranth-lang/amaranth#756](https://github.com/amaranth-lang/amaranth/issues/756)
 
-# Summary
+# Enumeration shapes
+
+## Summary
 [summary]: #summary
 
 Allow explicitly specifying shape for enumerations as an alternative to implicitly inferring it.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Hardware development includes a lot of enumerated values, so first class support for enumerations is important, and so is integration with the standard Python mechanisms for specifying enumerations.
@@ -30,7 +32,7 @@ unsigned(2)
 
 However, this does not cover an important use case: a enumeration where many values are reserved. For example, if the `Kind` enumeration above may need to be extended in the future, it would be necessary to reserve space for additional values, which may require additional storage bits. Right now there is no way to specify that `Kind` should be cast to e.g. `unsigned(4)`.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The Amaranth standard library module, `amaranth.lib.enum` can be used as a drop-in replacement for the Python standard library `enum` module. It exports the same classes as the ones provided by Python's `enum` (namely `Enum`, `Flag`, `IntEnum`, and `IntFlag`) and provides the same functionality, adding the possibility of specifying a shape for the enumeration when it is defined:
@@ -86,7 +88,7 @@ If a enumeration without an explicitly defined shape is used in a concatenation,
 (cat (const 1'd1))
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The Amaranth standard library module, `amaranth.lib.enum`, exports all of the public names of the Python standard library `enum` module. The `EnumMeta` class adds the functionality for storing and casting to shapes, and inherits from `ShapeCastable`. The `Enum`, `Flag`, `IntEnum`, and `IntFlag` classes in this module derive from `enum.Enum`, `enum.Flag`, `enum.IntEnum`, and `enum.IntFlag` respectively, and use `amaranth.lib.enum.EnumMeta` as their metaclass, which makes subclasses of `amaranth.lib.enum.Enum`, etc be instances of `ShapeCastable`.
@@ -97,14 +99,14 @@ When an `amaranth.lib.enum.Enum` subclass is cast to a shape, if the internal at
 
 When an instance of a `enum.Enum` subclass is used in a concatenation, and it is not an instance of `ShapeCastable`, or if it lacks the `_amaranth_shape_` attribute, a warning is emitted. This approach avoids a circular dependency between `amaranth.hdl.ast` and `amaranth.lib.enum`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * Introducing a new standard library module increases the API surface.
 * The names of enumeration base classes are the same as the standard library enumeration base classes, which may be confusing.
 * Deriving from a different class requires changes to the enumeration at its point of definition, meaning that it is not possible to annotate a enum that comes from an external library with an Amaranth shape.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Ultimately, this feature boils down to defining an internal variable on an enum, which is then used by `Shape.cast` and other core Amaranth code. There are a few possible options for doing this.
@@ -152,17 +154,17 @@ Alternative (3) has the drawbacks specified above, and the following advantages:
   * The `shape` argument matches `Signal(shape=)` (even though no one uses the keyword form) and works the way one would naturally expect.
   * Uses of `import enum` can be transparently replaced with `from amaranth.lib import enum` without updating the call sites, making the migration as easy as the other alternatives.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 None.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 None.

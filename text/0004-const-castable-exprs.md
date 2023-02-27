@@ -2,12 +2,14 @@
 - RFC PR: [amaranth-lang/rfcs#4](https://github.com/amaranth-lang/rfcs/pull/4)
 - Amaranth Issue: [amaranth-lang/amaranth#755](https://github.com/amaranth-lang/amaranth/issues/755)
 
-# Summary
+# Const-castable expressions
+
+## Summary
 [summary]: #summary
 
 Define a subset of expressions that are "const-castable" and accept them in contexts where currently only integers and enumerations with integer values are accepted.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 In certain contexts, Amaranth requires a constant to be used. These contexts are: `with m.Case(...):`, `Value.matches(...)`, and the value of an enumeration member that is being cast to a value.
@@ -37,7 +39,7 @@ Currently, all of these cases would produce syntax errors.
 
 There is a private `Value._as_const` method. It is not used internally, however Amaranth developers have started using it due to unmet needs. Removing it without providing a replacement would be disruptive, and will result in downstream codebases defining their own equivalent.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 In any context where a constant is accepted (`with m.Case(...):`, `Value.matches(...)`, and the value of an enumeration member), a "const-castable" expression can be used. The following expressions are const-castable:
@@ -57,7 +59,7 @@ A const-castable expression can be converted to a `Const` using `Const.cast`:
 (const 2'd2)
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The `Const.cast` static method casts its argument to a value and examines it. If it is a `Const`, it is returned. If it is a const-castable expression, the operands are recursively cast to constants, and the expression is evaluated.
@@ -73,7 +75,7 @@ The `Shape.cast` method accepts enumerations where all members have const-castab
 
 [rfc 3]: enumeration-shapes.html
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - A new language-level concept makes it harder to learn the language.
@@ -82,7 +84,7 @@ The `Shape.cast` method accepts enumerations where all members have const-castab
   - No one is calling `Value.cast` through the `Const.cast` binding.
   - `Const.cast` has a compatible interface (it returns a `Value`) and performs a similar function (it calls `Value.cast` first). However, it's not Liskov-compatible.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Alternatives:
@@ -95,19 +97,19 @@ Alternatives (2) and (3) both introduce a new language-level concept, the only d
 
 Alternative (3) fits the language better: `Value.cast` takes something value-castable and returns a `Value`, `Shape.cast` takes something shape-castable and returns a `Shape`, so `Const.cast` is a logical addition in that it takes something const-castable and returns a `Const`.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Rust and C++ provide functionality (`const fn` and `constexpr` respectively) for performing computation at compile time, restricted to a strict subset of the full language. In particular, it can be used to initialize constants, which makes it similar to the functionality proposed here.
 
 One challenge these languages face is the question of how large the subset should be. Rust in particular started off heavily restricting `const fn`, where it did not have any control flow. The functionality was gradually introduced later as needed.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Expanding the set of const-castable expressions to include arbitrary arithmetic operations. This RFC limits it to the most requested expression, `Cat`. This simplifies implementation and reduces the likelihood of introducing bugs in the constant evaluation code, most of which would be almost never used.
