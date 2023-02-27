@@ -1,4 +1,4 @@
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2023-02-07
 - RFC PR: [amaranth-lang/rfcs#4](https://github.com/amaranth-lang/rfcs/pull/4)
 - Amaranth Issue: [amaranth-lang/amaranth#755](https://github.com/amaranth-lang/amaranth/issues/755)
 
