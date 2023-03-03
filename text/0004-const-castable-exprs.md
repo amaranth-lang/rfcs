@@ -73,7 +73,7 @@ The `Shape.cast` method accepts enumerations where all members have const-castab
 
 [RFC 3][]: The `EnumMeta.__new__` method accepts enumerations where all members have const-castable expressions as their values. The values of members are the user-provided const-castable expressions, and not the result of casting them to a constant.
 
-[rfc 3]: enumeration-shapes.html
+[rfc 3]: 0003-enumeration-shapes.md
 
 ## Drawbacks
 [drawbacks]: #drawbacks
