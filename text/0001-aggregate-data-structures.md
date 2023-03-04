@@ -1,5 +1,5 @@
 - Start Date: 2023-02-14
-- RFC PR: [amaranth-lang/rfcs#0001](https://github.com/amaranth-lang/rfcs/pull/0001)
+- RFC PR: [amaranth-lang/rfcs#1](https://github.com/amaranth-lang/rfcs/pull/1)
 - Amaranth Issue: [amaranth-lang/amaranth#748](https://github.com/amaranth-lang/amaranth/issues/748)
 
 # Aggregate data structure library
@@ -359,4 +359,8 @@ This feature could be improved in several ways that are not in scope of this RFC
 
 ## Acknowledgements
 
-@modwizcode, @Kaucasus, and @lachlansneff provided valuable feedback while this RFC was being drafted.
+[@modwizcode], [@Kaucasus], and [@lachlansneff] provided valuable feedback while this RFC was being drafted.
+
+[@modwizcode]: https://github.com/modwizcode
+[@Kaucasus]: https://github.com/Kaucasus
+[@lachlansneff]: https://github.com/lachlansneff
