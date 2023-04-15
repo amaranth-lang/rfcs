@@ -1,5 +1,5 @@
 - Start Date: 2023-04-10
-- RFC PR: [amaranth-lang/rfcs#0000](https://github.com/amaranth-lang/rfcs/pull/0000)
+- RFC PR: [amaranth-lang/rfcs#0012](https://github.com/amaranth-lang/rfcs/pull/0012)
 - Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
 
 # Better clock domains
@@ -31,7 +31,10 @@ existing code, even if in some specific places some deprecations
 and/or default changes could be considered pertinent but are not
 required.
 
-The main difficulty is that implementing is cleanly will require some
+After some testing, it was noticed that the way to use EnableInserter
+changes, an example is given at the end.
+
+The main difficulty is that implementing it cleanly will require some
 fundamental modifications to the way the implementation works.  But at
 least having a clear target can help.
 
@@ -285,6 +288,131 @@ input clock domain is "pure" or is an enable on a faster clock.  It
 just works transparently whichever the case is.
 
 
+### Conversion example for EnableInserter
+
+As a example, let's take a MainModule which takes a *sync* clock
+domain as input and wants to give a submodule to clock domains *s1*
+and *s0* corresponding to alternative pos_edges of *sync*.  IOW, the
+raising and dropping edges of a divided-by-two clock.
+
+In the original code, we assume that *sync* has itself not been
+EnableInserter-ed.
+
+The submodule:
+
+```python
+class SubModule(Elaboratable):
+    def __init__(self):
+        ...
+
+    def elaborate(self, platform):
+        m = Module()
+        m.d.s1 += ...
+        m.d.s0 += ...
+        return m
+```
+
+The main module, original code (line wrapped for readability):
+
+```python
+class MainModule(Elaboratable):
+    def __init__(self):
+        self.phase = Signal()
+        self.s1_en = Signal()
+        self.s0_en = Signal()
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.sync += self.phase.eq(~self.phase)
+        m.d.comb += self.s1_en.eq(self.phase)
+        m.d.comb += self.s0_en.eq(~self.phase)
+
+        m.submodules.sub = sub = EnableInserter({'s0': self.s0_en, 's1': self.s1_en})
+                                  (DomainRenamer({'s0': 'sync', 's1': 'sync'})
+                                   (SubModule()))
+
+        return m
+```
+
+New version, with EnableInserter:
+```python
+class MainModule(Elaboratable):
+    def __init__(self):
+        self.phase = Signal()
+        self.s1_en = Signal()
+        self.s0_en = Signal()
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.sync += self.phase.eq(~self.phase)
+        m.d.comb += self.s1_en.eq(self.phase)
+        m.d.comb += self.s0_en.eq(~self.phase)
+
+        s0 = EnableInserter(m.d.sync, self.s0_en)
+        s1 = EnableInserter(m.d.sync, self.s1_en)
+
+        m.submodules.sub = sub = DomainRenamer({'s0': s0, 's1': s1})
+                                  (SubModule()))
+
+        return m
+```
+
+New version, with the new constructor:
+```python
+class MainModule(Elaboratable):
+    def __init__(self):
+        self.phase = Signal()
+        self.s1_en = Signal()
+        self.s0_en = Signal()
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.sync += self.phase.eq(~self.phase)
+        m.d.comb += self.s1_en.eq(self.phase)
+        m.d.comb += self.s0_en.eq(~self.phase)
+
+        s0 = ClockDomain(m.d.sync, en = self.s0_en)
+        s1 = ClockDomain(m.d.sync, en = self.s1_en)
+
+        m.submodules.sub = sub = DomainRenamer({'s0': s0, 's1': s1})
+                                  (SubModule()))
+
+        return m
+```
+
+New version, if one wants s0/s1 accessible to MainModule and other
+submodules if others exist (can be done alternatively with
+EnableInserter):
+```python
+class MainModule(Elaboratable):
+    def __init__(self):
+        self.phase = Signal()
+        self.s1_en = Signal()
+        self.s0_en = Signal()
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.sync += self.phase.eq(~self.phase)
+        m.d.comb += self.s1_en.eq(self.phase)
+        m.d.comb += self.s0_en.eq(~self.phase)
+
+        m.domains.s0 = ClockDomain(m.d.sync, en = self.s0_en)
+        m.domains,s1 = ClockDomain(m.d.sync, en = self.s1_en)
+
+        m.submodules.sub = sub = SubModule()
+
+        return m
+```
+
+An interesting detail is that the new code works whether or not sync
+comes with an enable on it.  Transformation is identical for
+ResetInserter.
+
+
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -302,7 +430,8 @@ on a variant of this proposal as a target.
 [drawbacks]: #drawbacks
 
 That requires big, big changes in the current implementation.  That's
-always a problem.
+always a problem.  Plus some changes in existing code around the
+inserters.
 
 
 ## Rationale and alternatives
