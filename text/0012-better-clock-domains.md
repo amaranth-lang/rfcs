@@ -312,7 +312,8 @@ class SubModule(Elaboratable):
         return m
 ```
 
-The main module, original code (line wrapped for readability):
+The main module, original code (line wrapped for readability, order
+between DomainRenamer and EnableInserter is critical):
 
 ```python
 class MainModule(Elaboratable):
@@ -328,14 +329,15 @@ class MainModule(Elaboratable):
         m.d.comb += self.s1_en.eq(self.phase)
         m.d.comb += self.s0_en.eq(~self.phase)
 
-        m.submodules.sub = sub = EnableInserter({'s0': self.s0_en, 's1': self.s1_en})
-                                  (DomainRenamer({'s0': 'sync', 's1': 'sync'})
+        m.submodules.sub = sub = DomainRenamer({'s0': 'sync', 's1': 'sync'})
+                                  (EnableInserter({'s0': self.s0_en, 's1': self.s1_en})
                                    (SubModule()))
 
         return m
 ```
 
 New version, with EnableInserter:
+
 ```python
 class MainModule(Elaboratable):
     def __init__(self):
@@ -354,12 +356,13 @@ class MainModule(Elaboratable):
         s1 = EnableInserter(m.d.sync, self.s1_en)
 
         m.submodules.sub = sub = DomainRenamer({'s0': s0, 's1': s1})
-                                  (SubModule()))
+                                  (SubModule())
 
         return m
 ```
 
 New version, with the new constructor:
+
 ```python
 class MainModule(Elaboratable):
     def __init__(self):
@@ -378,7 +381,7 @@ class MainModule(Elaboratable):
         s1 = ClockDomain(m.d.sync, en = self.s1_en)
 
         m.submodules.sub = sub = DomainRenamer({'s0': s0, 's1': s1})
-                                  (SubModule()))
+                                  (SubModule())
 
         return m
 ```
@@ -386,6 +389,7 @@ class MainModule(Elaboratable):
 New version, if one wants s0/s1 accessible to MainModule and other
 submodules if others exist (can be done alternatively with
 EnableInserter):
+
 ```python
 class MainModule(Elaboratable):
     def __init__(self):
