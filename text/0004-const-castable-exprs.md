@@ -71,7 +71,7 @@ The `m.Case(...)` (through the `Switch()` constructor) and `Value.matches(...)` 
 
 The `Shape.cast` method accepts enumerations where all members have const-castable expressions as their values. The shape of an enumeration is a shape with the smallest width that can represent the value of any enumeration member.
 
-[RFC 3][]: The `EnumMeta.__new__` method accepts enumerations where all members have const-castable expressions as their values. The values of members are the user-provided const-castable expressions, and not the result of casting them to a constant.
+[RFC 3][]: The `EnumMeta.__new__` method accepts enumerations where all members have const-castable expressions as their values. The value of each member is the value of the constant resulting from casting the user-provided expression.
 
 [rfc 3]: 0003-enumeration-shapes.md
 
