@@ -40,9 +40,9 @@ This method can also be directly called by the developer to construct a constant
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-A method `def const(self, obj):` is added on `ShapeCastable`. The class method `Const.cast(obj)` is extended to have a second argument, `shape=None`. If provided, then `shape` must be a shape-castable object. If it is an instance of `ShapeCastable`, then `shape.const(obj)` must return an Amaranth constant-castable expression with exactly the given shape. Constant casting proceeds on this expression as usual.
+A method `def const(self, obj):` is added on `ShapeCastable`.
 
-The `Signal(shape, reset=)` constructor is changed to pass `reset` through `Const.cast(reset, shape)` first.
+The `Signal(shape, reset=)` constructor is changed so that if `isinstance(shape, ShapeCastable)`, then `shape.const(reset)` is used instead of `reset`.
 
 The `.const()` instance method is implemented on `Layout` to accept a `Sequence` or `Mapping` instance and returns a `Const` with a bit pattern that has the fields set to the given values. Overlapping fields are written in the order of iteration of the input. If the field shape is a shape-castable object, then the value for that field is computed using `Const.cast(value, field.shape)`.
 
