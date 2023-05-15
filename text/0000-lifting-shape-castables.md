@@ -78,21 +78,6 @@ This RFC brings the semantics of `Signal` to be very close to semantics of typed
 * How does this interact with typechecking?
   * This is a straightforward higher order function so it's probably fine.
 
-* Code like this stops working and it's not clear how to replace it:
-
-  ```python
-  class RGBLayout(data.View):
-      def __init__(self, target=None, *, r_bits, g_bits, b_bits, **kwargs):
-          super().__init__(data.StructLayout({
-              "red":   unsigned(r_bits),
-              "green": unsigned(g_bits),
-              "blue":  unsigned(b_bits)
-          }, target, **kwargs))
-
-      def brightness(self):
-          return (self.red + self.green + self.blue)[-8:]
-  ```
-
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
