@@ -62,18 +62,16 @@ For a list of parameters to use for standard CRCs, refer to:
   remove the leading `1`.
 
 The CRC algorithms described in the [reveng] catalogue are also available
-in the Amaranth standard library in the `crc.Catalog` class.
+in the Amaranth standard library in the `crc.catalog` module.
 
 [reveng]: https://reveng.sourceforge.io/crc-catalogue/all.htm
 [crcmod]: http://crcmod.sourceforge.net/crcmod.predefined.html
 [CRC Zoo]: https://users.ece.cmu.edu/~koopman/crc/
 
-In Amaranth, the `crc.Parameters` class holds the parameters that describe a
+In Amaranth, the `crc.Algorithm` class holds the parameters that describe a
 CRC algorithm:
 
 * `crc_width`: the bit width of the CRC
-* `data_width`: the width of the input data words the CRC is computed over;
-  commonly 8 for processing byte-wise data but can be any length greater than 0
 * `polynomial`: the generator polynomial of the CRC, excluding an implicit
   leading 1 for the "x^n" term
 * `initial_crc`: the initial value of the CRC, loaded when computation of a
@@ -84,26 +82,33 @@ CRC algorithm:
     least-significant bit becomes the most-significant bit of output
 * `xor_output`: a value to XOR the output with
 
-The `crc.Parameters` class may be constructed manually, or via a
-`crc.Predefined` entry in `crc.Catalog`, which contains many commonly
-used CRC algorithms. The data width is not part of the `crc.Predefined`
-class, so it must be specified to create a `crc.Parameters`, for example:
+The `crc.Algorithm` class may be constructed manually, but for many
+commonly used CRC algorithms a predefined instance is available in
+the `crc.catalog` module.
+
+To fully define a CRC computation, the width of input data words to the CRC
+must also be specified. This is commonly 8 for processing byte-wise data,
+but can be any length greater than 0. The combination of a `crc.Algorithm`
+and the `data_width` makes a `crc.Parameters` instance, for example:
 
 ```python
 from amaranth.lib import crc
-params1 = crc.Parameters(8, 8, 0x2f, 0xff, False, False, 0xff)
-params2 = crc.Catalog.CRC8_AUTOSAR(data_width=8)
+algo = crc.Algorithm(crc_width=8, polynomial=0x2f, initial_crc=0xff,
+                     reflect_input=False, reflect_output=False,
+                     xor_output=0xff)
+params1 = algo(data_width=8)
+params2 = crc.catalog.CRC8_AUTOSAR(data_width=8)
 ```
 
 If not specified, the data width defaults to 8 bits.
 
-The `crc.Parameters` class can be used to compute CRCs in software using its
+The `crc.Parameters` class can be used to compute CRCs in software with its
 `compute()` method, which is passed an iterable of integer data words and
 returns the resulting CRC value.
 
 ```python
 from amaranth.lib import crc
-params = crc.Parameters(8, 8, 0x2f, 0xff, False, False, 0xff)
+params = crc.catalog.CRC8_AUTOSAR()
 assert params.compute(b"123456789") == 0xdf
 ```
 
@@ -112,14 +117,17 @@ or manually construct a `crc.Processor`:
 
 ```python
 from amaranth.lib import crc
-params = crc.Parameters(8, 8, 0x2f, 0xff, False, False, 0xff)
+algo = crc.Algorithm(crc_width=8, polynomial=0x2f, initial_crc=0xff,
+                     reflect_input=False, reflect_output=False,
+                     xor_output=0xff)
+params = algo(data_width=8)
 crc1 = m.submodules.crc1 = crc.Processor(params)
 crc2 = m.submodules.crc2 = crc.Catalog.CRC8_AUTOSAR().create()
 ```
 
-The `crc.Processor` module begins computation of a new CRC whenever its `first`
+The `crc.Processor` module begins computation of a new CRC whenever its `start`
 input is asserted. Input on `data` is processed whenever `valid` is asserted,
-which may occur in the same clock cycle as `first`. The updated CRC value is
+which may occur in the same clock cycle as `start`. The updated CRC value is
 available on the `crc` output on the clock cycle after `valid`.
 
 With the data width set to 1, a traditional bit-serial CRC is implemented
@@ -129,7 +137,7 @@ parallel.
 
 The `match_detected` output signal may be used to validate data that contains a
 trailing CRC. If the most recently processed word(s) form a valid CRC for all
-the data processed since reset, the CRC register will always contain a fixed
+the data processed since `start`, the CRC register will always contain a fixed
 value which can be computed in advance, and the `match_detected` output
 indicates whether the CRC register currently contains this value.
 
@@ -138,16 +146,19 @@ indicates whether the CRC register currently contains this value.
 
 The proposed new interface is:
 
-* A `crc.Parameters` class which holds the parameters for a CRC algorithm,
+* A `crc.Algorithm` class which holds the parameters for a CRC algorithm,
   all of which are passed to the constructor:
     * `crc_width`: bit width of the CRC register
-    * `data_width`: bit width of input data words
     * `polynomial`: generator polynomial for CRC algorithm
     * `initial_crc`: initial value of CRC at start of computation
     * `reflect_input`: if True, input words are bit-reversed
     * `reflect_output`: if True, output values are bit-reversed
     * `xor_output`: value to XOR the CRC value with at output
-* The class has the following methods:
+* `crc.Algorithm` implements `__call__(data_width=8)` which is used to create
+  a `crc.Parameters` instance with the specified data width.
+* A `crc.Parameters` class which is constructed using a `crc.Algorithm` and
+  a `data_width`.
+* `crc.Parameters` has the following methods:
     * `compute(data)` performs a software CRC computation on `data`, an
       iterable of input data words, and returns the CRC value
     * `create()` returns a `crc.Processor` instance preconfigured to use
@@ -155,16 +166,11 @@ The proposed new interface is:
     * `residue()` returns the residue value for these parameters, which is
       the value left in the CRC register after processing an entire valid
       codeword (data followed by its own valid CRC)
-    * `check()` returns the CRC computation of the ASCII string "123456789",
-      a defacto standard for validating CRC correctness
-* A `crc.Predefined` class which is constructed using all the parameters of
-  `crc.Parameters` except `data_width`, which is application-specific. This
-  class implements `__call__(data_width=8)` which is used to create a
-  `crc.Parameters` with the specified data width
-* A `crc.Catalog` class which contains instances of `crc.Predefined` as
-  class attributes
+    * `algorithm()` returns an `crc.Algorithm` with the same settings as
+      this `crc.Parameters` instance
 * A `crc.Processor` class which inherits from `Elaboratable` and implements
   the hardware generator
+* A `crc.catalog` module which contains instances of `crc.Algorithm`
 
 The hardware implementation uses the property that CRCs are linear, and so the
 new value of any bit of the CRC register can be found as a linear combination
@@ -229,18 +235,13 @@ computations.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Currently the design uses a `first` signal to signal the beginning of a new
-  CRC computation (previously called `reset`). Requiring that it may be
-  asserted simultaneously with the first valid data word of the new CRC adds
-  muxes to the design that would not be needed if `first` and `valid` cannot
-  be asserted together. Is this a worthwhile tradeoff, or is there a way to
-  avoid the extra muxes?
+- No outstanding unresolved questions.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- The data interface uses `first`, `data`, and `valid` signals.
-  Eventually, this should be replaced with a Stream, once they are finalised.
+- The data interface uses `start`, `data`, and `valid` signals.
+  Eventually, this could be replaced with a Stream, once they are finalised.
 
 - Currently the entire input data word must be valid together; there is no
   support for masking some bits off. In particular, such a feature could be
@@ -249,3 +250,7 @@ computations.
   FCS must be computed over individual bytes. However, the implementation
   complexity is high, the use cases seem more niche, and such a feature could
   be added in a backwards-compatible later revision.
+
+- The software CRC computation only supports computing over an entire
+  set of data. It would be possible to offer an API to permit incremental
+  updates and finalisation.
