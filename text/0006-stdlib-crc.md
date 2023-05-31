@@ -1,4 +1,4 @@
-- Start Date: 2023-05-21
+- Start Date: 2023-05-31
 - RFC PR: [amaranth-lang/rfcs#0006](https://github.com/amaranth-lang/rfcs/pull/0006)
 - Amaranth Issue: [amaranth-lang/amaranth#681](https://github.com/amaranth-lang/amaranth/issues/681)
 
