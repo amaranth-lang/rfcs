@@ -2,12 +2,14 @@
 - RFC PR: [amaranth-lang/rfcs#0006](https://github.com/amaranth-lang/rfcs/pull/0006)
 - Amaranth Issue: [amaranth-lang/amaranth#681](https://github.com/amaranth-lang/amaranth/issues/681)
 
-# Summary
+# CRC generator
+
+## Summary
 [summary]: #summary
 
 Add a cyclic redundancy check (CRC) generator to the Amaranth standard library.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Computing CRCs is a common requirement in hardware designs as they are used
@@ -21,7 +23,7 @@ See the [Wikipedia page on CRCs] for more background and use cases.
 
 [Wikipedia page on CRCs]: https://en.wikipedia.org/wiki/Cyclic_redundancy_check
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The Amaranth standard library includes a generator for a cyclic redundancy
@@ -141,7 +143,7 @@ the data processed since `start`, the CRC register will always contain a fixed
 value which can be computed in advance, and the `match_detected` output
 indicates whether the CRC register currently contains this value.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The proposed new interface is:
@@ -185,7 +187,7 @@ technical level of detail.
 
 [PR 681]: https://github.com/amaranth-lang/amaranth/pull/681
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Users could always write their own CRC or use an external library; Amaranth
@@ -193,7 +195,7 @@ does not need to provide one for them. However, since it's a very common
 requirement that we can satisfy efficiently for a lot of users, it seems
 reasonable to include in the standard library.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 As far as I'm aware, the method here is the optimal technique for generating
@@ -208,7 +210,7 @@ Additionally, the table approach generally requires a latency of 2 cycles (one
 extra to perform the table lookup). It's possible this would give better timing
 in some circumstances, but at the cost of block RAM resources and latency.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The specification chosen for the CRC parameters is a popular de-facto standard,
@@ -232,12 +234,12 @@ generating hardware their implementation details are not as relevant - small
 table lookups are popular as the tradeoffs there tend to favour word-at-a-time
 computations.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - No outstanding unresolved questions.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - The data interface uses `start`, `data`, and `valid` signals.
