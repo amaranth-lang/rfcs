@@ -4,6 +4,8 @@
 
 # Aggregate data structure library
 
+> **Amendments**
+> The behavior described in this RFC was updated by [RFC #8](0008-aggregate-extensibility.md), [RFC #9](0009-const-init-shape-castable.md), and [RFC #15](0015-lifting-shape-castables.md).
 
 ## Summary
 
