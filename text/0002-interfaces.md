@@ -385,23 +385,23 @@ Interfaces are described using an enumeration, `amaranth.lib.component.Flow`, an
   * A `Signature({"name": Member(...)})` object can be constructed from a name to member mapping.
   * `signature.members` is a mutable mapping that can be used to alter the description of a non-frozen signature.
     * `signature.members += {...}` adds members from the given mapping to `signature.members` if the names being added are not already used. Raises `NameError` otherwise.
-  * `signature.freeze()` prevents any further modifications of `signature.members`, enabling the caller to rely on a particular layout. It is applied recursively to constituent interfaces.
+  * `signature.freeze()` (or `signature.members.freeze()`) prevents any further modifications of `signature.members`, enabling the caller to rely on a particular layout. It is applied recursively to constituent interfaces.
   * `signature.__eq__()` compares:
     * anonymous signatures, which are equal when the members and their names compare equal;
     * named signatures, which are equal only to themselves (the same signature object), unless overridden in a derived class.
   * `signature.__iter__()` yields `path` recursively for every member and sub-member. A member's path is a tuple containing every name in the chain of attribute accesses required to reach the member. Members are yielded in an ascending lexicographical order. An interface member's path is yielded before the paths of its sub-members are.
   * `signature.__getitem__(*path)` looks up a member by its path. The flow of the member is flipped as many times as there are `In` signatures between the topmost signature and the signature of the member.
-  * `signature.flip()` returns a signature where every member is `member.flip()`ped. The exact object returned is a proxy object that overrides `__iter__` and `__getitem__` to flip the direction of members, and otherwise forwards attribute accesses untouched. That is, `signature.x = <value>` and `signature.flip().x = <value>` both define an attribute on the original `signature` object, and never on the proxy object alone.
+  * `signature.flip()` returns a signature where every member is `member.flip()`ped. The exact object returned is a proxy object that overrides the methods and attributes defined here such that the direction is flipped, and otherwise forwards attribute accesses untouched. That is, `signature.x = <value>` and `signature.flip().x = <value>` both define an attribute on the original `signature` object, and never on the proxy object alone.
   * `signature.compatible(object)` checks whether an arbitrary Python object is compatible with this signature. To be compatible with a signature:
     - for every member of the signature, the object must have a corresponding attribute
     - if the member is a port, the attribute value must be a value-castable such that `Value.cast(object.attr)` method returns a `Signal` or a `Const` that has the same width and signedness, and for signals, is not reset-less and has the same reset value as the member
       - a warning may be emitted if the `.shape` of the member and the `.shape()` of `object.attr` are not equal
     - if the member is an interface, the attribute value must be compatible with the signature of the member
     - if the member's `dimensions` are `(p, q, ...)`, the requirements below hold instead for every result of indexing the attribute value with `[i][j]...` where `i in range(p)`, `j in range(q)`, ...
-  * `signature.create_members()` freezes this signature and creates a dictionary of members from it. This is a helper method that is essentially the part of `create()` that subclasses are unlikely to need to override. For every member of the signature, the dictionary contains a value equal to:
+  * `signature.members.create()` creates a dictionary of members from it. This is a helper method that is essentially the part of `create()` that subclasses are unlikely to need to override. For every member of the signature, the dictionary contains a value equal to:
     * If the member is a port, `Signal(member.shape, reset=member.reset)`.
     * If the member is a signature, `member.signature.create()` for `Out` members, and `member.signature.flip().create()` for `In` members.
-  * `signature.create()` creates an interface object from this signature. To do this, it creates a fresh `object()` and replaces its dictionary with the result of `signature.create_members()`.  This method is expected to be routinely overridden in `Signature` subclasses to perform actions specific to a particular signature.
+  * `signature.create()` creates an interface object from this signature. To do this, it creates a fresh `object()` and replaces its dictionary with the result of `signature.members.create()`.  This method is expected to be routinely overridden in `Signature` subclasses to perform actions specific to a particular signature.
 
 
 ### Interface connection
@@ -479,7 +479,7 @@ This RFC in effect introduces a particular kind of elaboratable object: one that
 3. It makes it easy to convert a single standalone elaboratable to Verilog.
 
 To this end, a class `amaranth.lib.component.Component` is introduced:
-* `Component.__init__` (typically called as `super().__init__()`) updates `self.__dict__` with the result of `self.signature.create_members()`.
+* `Component.__init__` (typically called as `super().__init__()`) updates `self.__dict__` with the result of `self.signature.members.create()`.
   * TBD: what to do in case of a name conflict? abort (then to override, `super().__init__` call will be in the beginning) or ignore (then to override, `super().__init__` call will be in the end)
 * `Component.signature` collects PEP 526 variable annotations in the class, if any, and returns a signature object constructed from these, or raises an error otherwise. The signature object is created per-instance, not per-class, so that it can be safely mutated if this is a part of the workflow.
 
