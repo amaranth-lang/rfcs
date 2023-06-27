@@ -386,9 +386,6 @@ Interfaces are described using an enumeration, `amaranth.lib.component.Flow`, an
   * `signature.members` is a mutable mapping that can be used to alter the description of a non-frozen signature.
     * `signature.members += {...}` adds members from the given mapping to `signature.members` if the names being added are not already used. Raises `NameError` otherwise.
   * `signature.freeze()` (or `signature.members.freeze()`) prevents any further modifications of `signature.members`, enabling the caller to rely on a particular layout. It is applied recursively to constituent interfaces.
-  * `signature.__eq__()` compares:
-    * anonymous signatures, which are equal when the members and their names compare equal;
-    * named signatures, which are equal only to themselves (the same signature object), unless overridden in a derived class.
   * `signature.__iter__()` yields `path` recursively for every member and sub-member. A member's path is a tuple containing every name in the chain of attribute accesses required to reach the member. Members are yielded in an ascending lexicographical order. An interface member's path is yielded before the paths of its sub-members are.
   * `signature.__getitem__(*path)` looks up a member by its path. The flow of the member is flipped as many times as there are `In` signatures between the topmost signature and the signature of the member.
   * `signature.flip()` returns a signature where every member is `member.flip()`ped. The exact object returned is a proxy object that overrides the methods and attributes defined here such that the direction is flipped, and otherwise forwards attribute accesses untouched. That is, `signature.x = <value>` and `signature.flip().x = <value>` both define an attribute on the original `signature` object, and never on the proxy object alone.
