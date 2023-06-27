@@ -476,8 +476,7 @@ This RFC in effect introduces a particular kind of elaboratable object: one that
 3. It makes it easy to convert a single standalone elaboratable to Verilog.
 
 To this end, a class `amaranth.lib.component.Component` is introduced:
-* `Component.__init__` (typically called as `super().__init__()`) updates `self.__dict__` with the result of `self.signature.members.create()`.
-  * TBD: what to do in case of a name conflict? abort (then to override, `super().__init__` call will be in the beginning) or ignore (then to override, `super().__init__` call will be in the end)
+* `Component.__init__` (typically called as `super().__init__()`) updates `self.__dict__` with the result of `self.signature.members.create()`. (If there is a name conflict, it raises an error.)
 * `Component.signature` collects PEP 526 variable annotations in the class, if any, and returns a signature object constructed from these, or raises an error otherwise. The signature object is created per-instance, not per-class, so that it can be safely mutated if this is a part of the workflow.
 
 
