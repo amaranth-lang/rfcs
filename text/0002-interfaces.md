@@ -385,7 +385,7 @@ Interfaces are described using an enumeration, `amaranth.lib.component.Flow`, an
   * A `Signature({"name": Member(...)})` object can be constructed from a name to member mapping.
   * `signature.members` is a mutable mapping that can be used to alter the description of a non-frozen signature.
     * `signature.members += {...}` adds members from the given mapping to `signature.members` if the names being added are not already used. Raises `NameError` otherwise.
-  * `signature.freeze()` (or `signature.members.freeze()`) prevents any further modifications of `signature.members`, enabling the caller to rely on a particular layout. It is applied recursively to constituent interfaces.
+  * `signature.freeze()` (or `signature.members.freeze()`) prevents any further modifications of `signature` (and in particular `signature.members`), enabling the caller to rely on a particular layout. It is applied recursively to constituent interfaces.
   * `signature.__iter__()` yields `path` recursively for every member and sub-member. A member's path is a tuple containing every name in the chain of attribute accesses required to reach the member. Members are yielded in an ascending lexicographical order. An interface member's path is yielded before the paths of its sub-members are.
   * `signature.__getitem__(*path)` looks up a member by its path. The flow of the member is flipped as many times as there are `In` signatures between the topmost signature and the signature of the member.
   * `signature.flip()` returns a signature where every member is `member.flip()`ped. The exact object returned is a proxy object that overrides the methods and attributes defined here such that the direction is flipped, and otherwise forwards attribute accesses untouched. That is, `signature.x = <value>` and `signature.flip().x = <value>` both define an attribute on the original `signature` object, and never on the proxy object alone.
@@ -395,7 +395,7 @@ Interfaces are described using an enumeration, `amaranth.lib.component.Flow`, an
       - a warning may be emitted if the `.shape` of the member and the `.shape()` of `object.attr` are not equal
     - if the member is an interface, the attribute value must be compatible with the signature of the member
     - if the member's `dimensions` are `(p, q, ...)`, the requirements below hold instead for every result of indexing the attribute value with `[i][j]...` where `i in range(p)`, `j in range(q)`, ...
-  * `signature.members.create()` creates a dictionary of members from it. This is a helper method that is essentially the part of `create()` that subclasses are unlikely to need to override. For every member of the signature, the dictionary contains a value equal to:
+  * `signature.members.create()` creates a dictionary of members from it. This is a helper method for the common part of `signature.create()`. For every member of the signature, the dictionary contains a value equal to:
     * If the member is a port, `Signal(member.shape, reset=member.reset)`.
     * If the member is a signature, `member.signature.create()` for `Out` members, and `member.signature.flip().create()` for `In` members.
   * `signature.create()` creates an interface object from this signature. To do this, it creates a fresh `object()` and replaces its dictionary with the result of `signature.members.create()`.  This method is expected to be routinely overridden in `Signature` subclasses to perform actions specific to a particular signature.
@@ -463,7 +463,7 @@ class Outer(Component):
 
     def elaborate(self, platform):
         m = Module()
-        component.connect(m, component.forward(self.bus), self.inner.bus)
+        connect(m, forward(self.bus), self.inner.bus)
         return m
 ```
 
