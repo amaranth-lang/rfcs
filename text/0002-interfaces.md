@@ -497,7 +497,7 @@ To this end, a class `amaranth.lib.component.Component` is introduced:
 - Should `Signature` be called `Interface`?
   - The object returned by `Signature.create()` is an interface, not the signature itself
 - Should `Signature.compatible` be named something else, like `Signature.is_implemented`?
-- Should `component.forward` be named something else, like `component.evert` or `component.flip`?
+- Should `component.forward` be named something else, like `component.forwarded` or `component.forwarding` or `component.evert` or `component.flip`?
 
 
 ## Future work
