@@ -107,9 +107,9 @@ class SequenceSource(Elaboratable):
     ...
 
     signature = Signature({
-        "data": Out[16],
-        "ready": In[1],
-        "valid": Out[1]
+        "data": Out(16),
+        "ready": In(1),
+        "valid": Out(1)
     })
 ```
 
@@ -129,9 +129,9 @@ class NumberSink(Elaboratable):
             ... # process it somehow
 
     signature = Signature({
-        "data": In[16],
-        "ready": Out[1],
-        "valid": In[1]
+        "data": In(16),
+        "ready": Out(1),
+        "valid": In(1)
     })
 ```
 
@@ -171,9 +171,9 @@ However, this approach still has flaws. Most importantly, the signature for `Seq
 
 ```python
 Stream16BitSignature = Signature({
-    "data": Out[16],
-    "ready": In[1],
-    "valid": Out[1]
+    "data": Out(16),
+    "ready": In(1),
+    "valid": Out(1)
 })
 ```
 
@@ -201,9 +201,9 @@ Although some duplication was eliminated, some more remains: currently, it is ne
 class StreamSignature(Signature):
     def __init__(self, payload_shape):
         return super().__init__({
-            "payload": Out[payload_shape],
-            "ready": In[1],
-            "valid": Out[1]
+            "payload": Out(payload_shape),
+            "ready": In(1),
+            "valid": Out(1)
         })
 ```
 
@@ -230,8 +230,8 @@ class AbsoluteProcessor(Elaboratable):
     ...
 
     signature = Signature({
-        "i": In[StreamSignature(signed(16))],
-        "o": Out[StreamSignature(unsigned(16))]
+        "i": In(StreamSignature(signed(16))),
+        "o": Out(StreamSignature(unsigned(16)))
     })
 ```
 
@@ -260,28 +260,27 @@ Once more, to reduce error-prone repetition, the `Signature` class offers a way 
 ```python
 class AbsoluteProcessor(Elaboratable):
     def __init__(self):
-        self.i = StreamSignature(signed(16)).flip().apply()
-        self.o = StreamSignature(unsigned(16)).apply()
+        self.i = StreamSignature(signed(16)).flip().create()
+        self.o = StreamSignature(unsigned(16)).create()
 
     signature = Signature({
-        "i": In[StreamSignature(signed(16))],
-        "o": Out[StreamSignature(unsigned(16))]
+        "i": In(StreamSignature(signed(16))),
+        "o": Out(StreamSignature(unsigned(16)))
     })
 
     ...
 ```
 
-However, since the interface of `AbsoluteProcessor` as a whole can itself be described as a signature, it is possible to further shorten it by passing `self` to the `apply` method, in which case it will update attributes of the provided object instead of creating a new one:
+`Signature` subclasses can also override the `create` method to add functionality not present in the base class. For example, a signature for a bus such as Wishbone or AXI could return an instance of a class rather than a simple `object()`, and include attributes indicating which optional features of the bus are enabled.
+
+However, since the interface of `AbsoluteProcessor` as a whole can itself be described as a signature, it is possible to further shorten it by deriving from `component.Component` instead of `Elaboratable`, in which case the attributes will be filled in from the signature automatically:
 
 ```python
-class AbsoluteProcessor(Elaboratable):
+class AbsoluteProcessor(component.Component):
     signature = Signature({
-        "i": In[StreamSignature(signed(16))],
-        "o": Out[StreamSignature(unsigned(16))]
+        "i": In(StreamSignature(signed(16))),
+        "o": Out(StreamSignature(unsigned(16)))
     })
-
-    def __init__(self):
-        self.signature.apply(self)
 
     def elaborate(self):
         m = Module()
@@ -294,7 +293,23 @@ class AbsoluteProcessor(Elaboratable):
         return m
 ```
 
-`Signature` subclasses can also override the `apply` method to add functionality not present in the base class. For example, a signature for a bus such as Wishbone or AXI could return an instance of a class rather than a simple `object()`, and include attributes indicating which optional features of the bus are enabled.
+Python variable annotations can also be used in cases like the above, where the signature is the same for every instance of the class (i.e. the component is not parameterized during creation):
+
+```python
+class AbsoluteProcessor(component.Component):
+    i: In(StreamSignature(signed(16)))
+    o: Out(StreamSignature(unsigned(16)))
+
+    def elaborate(self):
+        m = Module()
+        with m.If(self.i.payload > 0):
+            m.d.comb += self.o.payload.eq(self.i.payload)
+        with m.Else():
+            # Does not overflow, since -(-32768) [least signed(16)] is less
+            # than 65536 [greatest unsigned(16)].
+            m.d.comb += self.o.payload.eq(-self.i.payload)
+        return m
+```
 
 
 ## Reference-level explanation
@@ -398,13 +413,13 @@ m.d.comb += output_port.eq(input_port)
 In some cases, an outer elaboratable object creates an inner elaboratable object and _forwards_ an interface of the inner object like this:
 
 ```python
-class Outer(Elaboratable):
-    def __init__(self):
-        self.inner = Inner()
+class Outer(Component):
+    bus: BusSignature()
 
-        Signature({
-            "bus": BusSignature()
-        }).apply(self)
+    def __init__(self):
+        super().__init__()
+
+        self.inner = Inner()
 
     def elaborate(self, platform):
         m = Module()
@@ -417,11 +432,8 @@ class Outer(Elaboratable):
         return m
 
 
-class Inner(Elaboratable):
-    def __init__(self):
-        Signature({
-            "bus": BusSignature()
-        }).apply(self)
+class Inner(Component):
+    bus: BusSignature()
 
     ...
 ```
@@ -431,7 +443,14 @@ In this case, `amaranth.lib.component.connect(...)` won't help, since an output 
 An additional function `amaranth.lib.component.forward(obj)` is added to assist in this case. It returns a proxy object `obj_forward` where `obj_forward.signature` equals `obj.signature.flip()`, and everything else is forwarded identically otherwise. So, the `Outer.elaborate` method can be rewritten as:
 
 ```python
-class Outer(Elaboratable):
+class Outer(Component):
+    bus: BusSignature()
+
+    def __init__(self):
+        super().__init__()
+
+        self.inner = Inner()
+
     def elaborate(self, platform):
         m = Module()
         component.connect(m, component.forward(self.bus), self.inner.bus)
@@ -463,7 +482,7 @@ To this end, a class `amaranth.lib.component.Component` is introduced:
 ## Naming questions
 
 - Should `Signature` be called `Interface`?
-  - The object returned by `Signature.apply()` is an interface, not the signature itself
+  - The object returned by `Signature.create()` is an interface, not the signature itself
 - Should `Signature.compatible` be named something else, like `Signature.is_implemented`?
 - Should `component.forward` be named something else, like `component.evert` or `component.flip`?
 
