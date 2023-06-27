@@ -373,7 +373,7 @@ Interfaces are described using an enumeration, `amaranth.lib.component.Flow`, an
     * the `.is_signature` property be `True`;
     * the `.shape` property raise `TypeError`;
     * the `.reset` property raise `TypeError`;
-    * the `.signature` property return `signature`;
+    * the `.signature` property return `signature` if `flow` is `Out`, `signature.flip()` if `flow` is `In`.
     * the `.dimensions` property be `()`.
   * `member.array(*dimensions)` returns a new `Member` object whose `.dimensions` property is `dimensions`, which is any amount of non-negative numbers, and all other properties are the same as those of `member`.
   * `member.flip()` returns a new `Member` object whose `.flow` property is `~member.flow`, and all other properties are the same as those of `member`.
