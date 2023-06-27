@@ -495,6 +495,11 @@ To this end, a class `amaranth.lib.component.Component` is introduced:
   * It is not a function on `amaranth.hdl.dsl.Module` to avoid privileging the standard interface library over any other library that may be written downstream. At the moment nothing in `amaranth.lib` is special in any way other than its name, and preserving this is valuable to the author.
 
 
+## Unresolved questions
+
+- Should `Signature.__iter__` and `Signature.__getitem__` exist, or should they be combined and moved to `SignatureMembers[Flipped].flatten`?
+
+
 ## Naming questions
 
 - Should `Signature` be called `Interface`?
