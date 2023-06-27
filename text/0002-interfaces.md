@@ -103,6 +103,9 @@ This RFC proposes a way of describing signal directions that can be applied to a
 To describe signal directions, only a single addition is needed: the `signature` property:
 
 ```python
+from amaranth.lib.component import Signature, In, Out
+
+
 class SequenceSource(Elaboratable):
     ...
 
@@ -153,18 +156,19 @@ This is tedious, verbose, and error-prone. It is possible to define an applicati
 This RFC introduces a way to describe interfaces (collections of directional signals; more on this later) and a single operation: *connecting*. The code above now transforms into:
 
 ```python
-from amaranth.lib import component
+from amaranth.lib.component import connect
+
 
 m = Module()
 m.submodules.source = source = SequenceSource()
 m.submodules.sink = sink = NumberSink()
-component.connect(m, sink, source)
+connect(m, sink, source)
 ```
 
-The order of arguments to `component.connect` does not matter as the directionality is defined by the components themselves. It could just as well be written as:
+The order of arguments to `connect` does not matter as the directionality is defined by the components themselves. It could just as well be written as:
 
 ```python
-component.connect(m, source, sink)
+connect(m, source, sink)
 ```
 
 However, this approach still has flaws. Most importantly, the signature for `SequenceSource` and `NumberSink` is written twice, but their `signature` is exactly the same except that the direction is flipped: `In` members become `Out`, and vice versa. To avoid error-prone repetition here, the signature can be defined once:
@@ -276,7 +280,10 @@ class AbsoluteProcessor(Elaboratable):
 However, since the interface of `AbsoluteProcessor` as a whole can itself be described as a signature, it is possible to further shorten it by deriving from `component.Component` instead of `Elaboratable`, in which case the attributes will be filled in from the signature automatically:
 
 ```python
-class AbsoluteProcessor(component.Component):
+from amaranth.lib.component import Component
+
+
+class AbsoluteProcessor(Component):
     signature = Signature({
         "i": In(StreamSignature(signed(16))),
         "o": Out(StreamSignature(unsigned(16)))
@@ -296,7 +303,7 @@ class AbsoluteProcessor(component.Component):
 Python variable annotations can also be used in cases like the above, where the signature is the same for every instance of the class (i.e. the component is not parameterized during creation):
 
 ```python
-class AbsoluteProcessor(component.Component):
+class AbsoluteProcessor(Component):
     i: In(StreamSignature(signed(16)))
     o: Out(StreamSignature(unsigned(16)))
 
@@ -309,6 +316,12 @@ class AbsoluteProcessor(component.Component):
             # than 65536 [greatest unsigned(16)].
             m.d.comb += self.o.payload.eq(-self.i.payload)
         return m
+```
+
+All of the import statements in the code examples above can be replaced with:
+
+```python
+from amaranth.lib.component import *
 ```
 
 
