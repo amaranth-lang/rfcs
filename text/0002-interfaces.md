@@ -508,6 +508,8 @@ To this end, a class `amaranth.lib.component.Component` is introduced:
 - Should `Signature.compatible` be named something else, like `Signature.is_implemented`?
 - Should `component.forward` be named something else, like `component.forwarded` or `component.forwarding` or `component.evert` or `component.flip`?
 
+There is also a much bigger naming question here. Ideally, `amaranth.lib.component` would be called `amaranth.lib.module` and `amaranth.hdl.dsl.Module` would be called something else. In fact `amaranth.hdl.dsl.Module` is a remarkably poor name for what it does! If it was called amaranth.hdl.dsl.Builder` it would accurately reflect the function *and* not clash with this library. One option is to rename it to `Builder`, leave `Module` as an alias (but not recommend it in educational materials), and then name this library `amaranth.lib.module`.
+
 
 ## Future work
 
