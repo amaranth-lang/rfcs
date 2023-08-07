@@ -7,7 +7,7 @@
 ## Summary
 [summary]: #summary
 
-Remove the `log2_int(n, need_pow2=True)` function.
+Replace `log2_int` with two functions: `ceil_log2` and `exact_log2`.
 
 ## Motivation
 [motivation]: #motivation
@@ -20,31 +20,57 @@ It behaves like so:
 * if `n == 0`, it returns `0`;
 * if `n != 0`, it returns `(n - 1).bit_length()`.
 
-Its differences with the `math.log2` function are summarized in the following table:
+#### Differences with `math.log2`
 
-|   `n` |  `math.log2(n)`   |  `log2_int(n)`    | `log2_int(n, need_pow2=False)` |
-| ----- |  ---------------- |  ---------------- | ------------------------------ |
-|   `4` |  `2.0`            |  `2`              | `2`                            |
-|   `3` |  `1.58496250...`  |  `ValueError`     | `2`                            |
-| `0.5` |  `-1.0`           |  `AttributeError` | `AttributeError`               |
-|   `0` |  `ValueError`     |  `0`              | `0`                            |
-|  `-1` |  `ValueError`     |  `ValueError`     | `2`                            |
+In practice, `log2_int` differs from `math.log2` in the following ways:
 
+1. its implementation is restricted to integers only;
+2. if `need_pow2` is false, the result is rounded up to the nearest integer;
+3. it doesn't raise an exception for `n == 0`;
+4. if `need_pow2` is false, it doesn't raise an exception for `n < 0`.
 
-In practice, developers seem to use `log2_int` as a variant of `math.log2` whose result is rounded-up to an integer, in order to know how many bits are needed to represent a number.
+#### Observations
 
-However, the fact that it transparently accepts `0` and rejects non-integer values such as `0.5` makes it inadequate for use cases outside bit manipulation.
+* *1)* is a desirable property; coercing integers into floating-point numbers is fraught with peril, as the latter have limited precision.
+* *2)* has common use-cases in digital design, such as address decoders.
+* *3)* and *4)* are misleading at best. Despite being advertised as a logarithm, `log2_int` doesn't exclude 0 or negative integers from its domain.
 
-## Explanation
-[explanation]: #explanation
+## Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
 
-The `log2_int` function is deprecated and removed in favor of `math.log2`.
+Amaranth provides two log2 functions for integer arithmetic:
 
-The following suggestions are made to help migration:
+* `ceil_log2(n)`, where `n` is assumed to be any positive integer
+* `exact_log2(n)`, where `n` is assumed to be an integer power-of-2
 
-* `int(log2(n))` can be used instead of `log2_int(n)`;
-* `ceil(log2(n))` can be used instead of `log2_int(n, need_pow2=False)`;
-* if `n == 0` or `n < 0` are valid, the caller must handle them explicitly.
+For example:
+
+```python3
+ceil_log2(8) # 3
+ceil_log2(5) # 3
+ceil_log2(4) # 2
+
+exact_log2(8) # 3
+exact_log2(5) # raises a ValueError
+exact_log2(4) # 2
+```
+
+## Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+Use of the `log2_int` function is deprecated.
+
+A `ceil_log2(n)` function is added, that:
+
+* returns the integer log2 of the smallest power-of-2 greater than or equal to `n`;
+* raises a `TypeError` if `n` is not an integer;
+* raises a `ValueError` if `n` is lesser than or equal to 0.
+
+An `exact_log2(n)` function is added, that:
+
+* returns the integer log2 of `n`;
+* raises a `TypeError` if `n` is not an integer;
+* raises a `ValueError` if `n` is not a power-of-two.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -54,7 +80,22 @@ This is a breaking change.
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-We could keep `log2_int`. The author believes that the suggested replacements are more effective at communicating intent.
+The following alternatives have been considered:
+
+1. Do nothing. Callers of `log2_int` may still need to restrict its domain to positive integers.
+2. Restrict `log2_int` to positive integers. Downstream code relying on the previous behavior may silently break.
+3. Remove `log2_int`, and use `math.log2` as replacement:
+    * `log2_int(n)` would be replaced with `math.log2(n)`
+    * `log2_int(n, need_pow2=False)` would be replaced with `math.ceil(math.log2(n))`
+
+Option *3)* will give incorrect results, as `n` is coerced from `int` to `float`:
+
+```
+>>> log2_int((1 << 64) + 1, need_pow2=False)
+65
+>>> math.ceil(math.log2((1 << 64) + 1))
+64
+```
 
 ## Prior art
 [prior-art]: #prior-art
@@ -70,3 +111,9 @@ None.
 [future-possibilities]: #future-possibilities
 
 None.
+
+## Acknowledgements
+
+[@mwkmwkmwk] provided valuable feedback while this RFC was being drafted.
+
+[@mwkmwkmwk]: https://github.com/mwkmwkmwk
