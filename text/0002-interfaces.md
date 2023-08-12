@@ -406,7 +406,7 @@ Interfaces are described using an enumeration, `amaranth.lib.wiring.Flow`, and t
   * `signature.members.create()` creates a dictionary of members from it. This is a helper method for the common part of `signature.create()`. For every member of the signature, the dictionary contains a value equal to:
     * If the member is a port, `Signal(member.shape, reset=member.reset)`.
     * If the member is a signature, `member.signature.create()` for `Out` members, and `member.signature.flip().create()` for `In` members.
-  * `signature.create()` creates an interface object from this signature. To do this, it creates a fresh `amaranth.lib.wiring.Interface()` (which is essentially an empty class) and replaces its dictionary with the result of `signature.members.create()`.  This method is expected to be routinely overridden in `Signature` subclasses to perform actions specific to a particular signature.
+  * `signature.create()` creates an interface object from this signature. To do this, it creates a fresh `amaranth.lib.wiring.Interface()` (which is an empty class) and replaces its dictionary with the result of `signature.members.create()`.  This method is expected to be routinely overridden in `Signature` subclasses to perform actions specific to a particular signature.
 
 
 ### Interface connection
