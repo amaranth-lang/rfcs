@@ -55,7 +55,7 @@ Since these drawbacks are entrenched in the public API and make `Record` nearly 
 
 Although some HDLs and IRs (Migen, Chisel, FIRRTL, ...) choose to use the same basic aggregate data type to represent _structured data_ and _directional interfaces_, these mechanisms are in direct conflict. Complex forms of structured data, such as unions, are incompatible with associating directionality independently with every leaf member; and the non-directional nature of stored data requires complicated and error-prone rules when it can become a part of a directional connection.
 
-Amaranth, instead, opts to include two superficially similar mechanisms for defining and accessing hierarchical aggregate data: `amaranth.lib.data` (RFC #1) and `amaranth.lib.component` (this RFC). `amaranth.lib.data` provides _data views_ that reinterpret bit containers as complex aggregates, and entirely avoids directionality. `amaranth.lib.component` provides _signatures_ that give a concrete shape to signals at component boundaries, and always treats them as directional.
+Amaranth, instead, opts to include two superficially similar mechanisms for defining and accessing hierarchical aggregate data: `amaranth.lib.data` (RFC #1) and `amaranth.lib.wiring` (this RFC). `amaranth.lib.data` provides _data views_ that reinterpret bit containers as complex aggregates, and entirely avoids directionality. `amaranth.lib.wiring` provides _signatures_ that give a concrete shape to signals at component boundaries, and always treats them as directional.
 
 When connections are made strictly between an output and a correspondingly named input, interfaces gain a dualistic nature: every connection is made between two interfaces whose port directions are the inverse of each other, and which are identical otherwise. To describe interfaces without repeating oneself, then, one has to pick an arbitrarily preferred directionality (and stick with it). Many interfaces are asymmetric, with data flowing from a source to a sink, or transactions issued from an initiator to a target. Amaranth picks the _source_ or _initiator_ perspective; an interface, examined in isolation, defines as outputs the signals that would be outputs of an initiator (and inputs of a target). Then, when an interface with true (non-flipped) directionality describes a component's output, the same interface with inverse (flipped) directionality symmetrically describes an input.
 
@@ -103,7 +103,7 @@ This RFC proposes a way of describing signal directions that can be applied to a
 To describe signal directions, only a single addition is needed: the `signature` property:
 
 ```python
-from amaranth.lib.component import Signature, In, Out
+from amaranth.lib.wiring import Signature, In, Out
 
 
 class SequenceSource(Elaboratable):
@@ -156,7 +156,7 @@ This is tedious, verbose, and error-prone. It is possible to define an applicati
 This RFC introduces a way to describe interfaces (collections of directional signals; more on this later) and a single operation: *connecting*. The code above now transforms into:
 
 ```python
-from amaranth.lib.component import connect
+from amaranth.lib.wiring import connect
 
 
 m = Module()
@@ -280,7 +280,7 @@ class AbsoluteProcessor(Elaboratable):
 However, since the interface of `AbsoluteProcessor` as a whole can itself be described as a signature, it is possible to further shorten it by deriving from `component.Component` instead of `Elaboratable`, in which case the attributes will be filled in from the signature automatically:
 
 ```python
-from amaranth.lib.component import Component
+from amaranth.lib.wiring import Component
 
 
 class AbsoluteProcessor(Component):
@@ -321,7 +321,7 @@ class AbsoluteProcessor(Component):
 All of the import statements in the code examples above can be replaced with:
 
 ```python
-from amaranth.lib.component import *
+from amaranth.lib.wiring import *
 ```
 
 
@@ -349,7 +349,7 @@ A single elaboratable object will often have several interfaces; e.g. a peripher
 
 ### Interface description
 
-Interfaces are described using an enumeration, `amaranth.lib.component.Flow`, and two classes, `amaranth.lib.component.Member` and `amaranth.lib.component.Signature`:
+Interfaces are described using an enumeration, `amaranth.lib.wiring.Flow`, and two classes, `amaranth.lib.wiring.Member` and `amaranth.lib.wiring.Signature`:
 
 * `Flow` is an enumeration with two values, `In` and `Out`.
 
@@ -406,21 +406,21 @@ Interfaces are described using an enumeration, `amaranth.lib.component.Flow`, an
   * `signature.members.create()` creates a dictionary of members from it. This is a helper method for the common part of `signature.create()`. For every member of the signature, the dictionary contains a value equal to:
     * If the member is a port, `Signal(member.shape, reset=member.reset)`.
     * If the member is a signature, `member.signature.create()` for `Out` members, and `member.signature.flip().create()` for `In` members.
-  * `signature.create()` creates an interface object from this signature. To do this, it creates a fresh `object()` and replaces its dictionary with the result of `signature.members.create()`.  This method is expected to be routinely overridden in `Signature` subclasses to perform actions specific to a particular signature.
+  * `signature.create()` creates an interface object from this signature. To do this, it creates a fresh `amaranth.lib.wiring.Interface()` (which is essentially an empty class) and replaces its dictionary with the result of `signature.members.create()`.  This method is expected to be routinely overridden in `Signature` subclasses to perform actions specific to a particular signature.
 
 
 ### Interface connection
 
-Interface objects may be connected to each other using the `amaranth.lib.component.connect(m, first, *rest)` free function.
+Interface objects may be connected to each other using the `amaranth.lib.wiring.connect(m, *objects)` free function.
 
 This function connects interface objects that satisfy the following requirements:
-* For every port member with a given `path` and `first_shape` in `first`, there is a port member with the same `path` in each of `rest` with shape `rest_shape`, where `Shape.cast(first_shape) == Shape.cast(rest_shape)`, and there are no other members in any of `rest`. In other words, the width and signedness of all of port members must be equal, but the shape-castable objects specifying the width and signedness do not have to be.
-  * It is expected that any mismatch in signatures will be resolved (through wrappers, mutating signature members, or otherwise) before interfaces are being connected.
-* Either:
-  1. There is exactly one interface object in `rest`, and for every pair of members `first_member` and `rest_member`, `first_member.flow == ~rest_member.flow`.
-  2. There is any amount of interfaces in `rest`, and for every pair of members `first_member` and `rest_member`, `first_member.flow == Out` and `rest_member.flow == In`.
+* The set of members (considered by their paths) is exactly the same for each of the objects.
+* For each given path, all members are either signature members or port members.
+* For each given path where all members are port members, the width of every member with the same path is equal, though the exact types of the objects returned by the `.shape` property may differ.
+* For each given path where all members are port members, the reset values of all members with the same path must match.
+* For each given path where all members are port members, exactly one member has an `Out` flow.
 
-In both of the cases (1) and (2), the function, for each pair of an input port and an output of port with the same path, the function connects these as follows:
+The `Out` port member is connected to the `In` port members with the same path as follows:
 ```python
 m.d.comb += output_port.eq(input_port)
 ```
@@ -456,9 +456,9 @@ class Inner(Component):
     ...
 ```
 
-In this case, `amaranth.lib.component.connect(...)` won't help, since an output needs to be connected to an output, and an input to an input.
+In this case, `amaranth.lib.wiring.connect(...)` won't help, since an output needs to be connected to an output, and an input to an input.
 
-An additional function `amaranth.lib.component.forward(obj)` is added to assist in this case. It returns a proxy object `obj_forward` where `obj_forward.signature` equals `obj.signature.flip()`, and everything else is forwarded identically otherwise. So, the `Outer.elaborate` method can be rewritten as:
+An additional function `amaranth.lib.wiring.forward(obj)` is added to assist in this case. It returns a proxy object `obj_forward` where `obj_forward.signature` equals `obj.signature.flip()`, and everything else is forwarded identically otherwise. So, the `Outer.elaborate` method can be rewritten as:
 
 ```python
 class Outer(Component):
@@ -483,7 +483,7 @@ This RFC in effect introduces a particular kind of elaboratable object: one that
 2. It simplifies and standardizes assignment of the interface attributes, making the `signature` property the single source of truth for the module's interface;
 3. It makes it easy to convert a single standalone elaboratable to Verilog.
 
-To this end, a class `amaranth.lib.component.Component` is introduced:
+To this end, a class `amaranth.lib.wiring.Component` is introduced:
 * `Component.__init__` (typically called as `super().__init__()`) updates `self.__dict__` with the result of `self.signature.members.create()`. (If there is a name conflict, it raises an error.)
 * `Component.signature` collects PEP 526 variable annotations in the class, if any, and returns a signature object constructed from these, or raises an error otherwise. The signature object is created per-instance, not per-class, so that it can be safely mutated if this is a part of the workflow.
 
@@ -492,7 +492,7 @@ To this end, a class `amaranth.lib.component.Component` is introduced:
 
 - Do nothing. `Record` will continue to be used alongside the continued proliferation of ad-hoc implementations of similar functionality, and continue to impair the use of Amaranth components together.
 
-- Replace the `interface.lib.component.connect` free function with a function `amaranth.hdl.dsl.Module.connect`.
+- Replace the `amaranth.lib.wiring.connect` free function with a function `amaranth.hdl.dsl.Module.connect`.
   * It is not a function on `amaranth.hdl.dsl.Module` to avoid privileging the standard interface library over any other library that may be written downstream. At the moment nothing in `amaranth.lib` is special in any way other than its name, and preserving this is valuable to the author.
 
 
@@ -503,12 +503,9 @@ To this end, a class `amaranth.lib.component.Component` is introduced:
 
 ## Naming questions
 
-- Should `Signature` be called `Interface`?
-  - The object returned by `Signature.create()` is an interface, not the signature itself
+- Should `amaranth.lib.wiring` be called something else, like `amaranth.lib.bus` or `amaranth.lib.component`?
 - Should `Signature.compatible` be named something else, like `Signature.is_implemented`?
-- Should `component.forward` be named something else, like `component.forwarded` or `component.forwarding` or `component.evert` or `component.flip`?
-
-There is also a much bigger naming question here. Ideally, `amaranth.lib.component` would be called `amaranth.lib.module` and `amaranth.hdl.dsl.Module` would be called something else. In fact `amaranth.hdl.dsl.Module` is a remarkably poor name for what it does! If it was called amaranth.hdl.dsl.Builder` it would accurately reflect the function *and* not clash with this library. One option is to rename it to `Builder`, leave `Module` as an alias (but not recommend it in educational materials), and then name this library `amaranth.lib.module`.
+- Should `amaranth.lib.wiring.forward` be named something else, like `amaranth.lib.wiring.forwarded` or `amaranth.lib.wiring.forwarding` or `amaranth.lib.wiring.flip`?
 
 
 ## Future work
