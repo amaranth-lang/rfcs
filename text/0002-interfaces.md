@@ -239,7 +239,7 @@ class AbsoluteProcessor(Elaboratable):
     })
 ```
 
-To be compatible with this signature, an `AbsoluteProcessor` instance must have an `i` attribute compatible with a `StreamSignature(signed(16)).flip()`, and an `o` attribute compatible with a `StreamSignature(unsigned(16))`. These could be defined manually:
+To be compliant with this signature, an `AbsoluteProcessor` instance must have an `i` attribute compliant with a `StreamSignature(signed(16)).flip()`, and an `o` attribute compliant with a `StreamSignature(unsigned(16))`. These could be defined manually:
 
 ```python
 class AbsoluteProcessor(Elaboratable):
@@ -338,11 +338,11 @@ It also introduces a number of technical terms:
 * An _interface_ (a concept) is a shared boundary across which several Amaranth components exchange data. It is comprised of a set of signals and the invairants that govern their use.
 * An _interface object_ (an implementation of the concept) a Python object that includes:
   1. attributes whose value is an Amaranth value-castable, or another interface;
-  2. a `signature` attribute whose value is a _signature_ that is _compatible_ with this object;
+  2. a `signature` attribute whose value is a _signature_ that is _compliant_ with this object;
   3. a description of the invariants applying to its use (in form of documentation, testbenches, formal tests, etc.).
 * A _signature_ is a `Signature` instance describing requirements applicable to a hierarchy of interace objects.
 * A _signature member_ is a `Member` instance describing requirements applicable to a single attribute of an interface object. Two kinds of signature members exist: port members (requiring the value of the attribute to be a `Signal`), and interface members (requiring the value of the attribute to be another interface object).
-* A signature is _compatible_ with an object (therefore making it an interface object) if every member of the signature object corresponds to an attribute of the object whose value fits the requirements.
+* An object is _compliant_ with a signature (therefore making it an interface object) if every member of the signature corresponds to an attribute of the object whose value fits the requirements.
 
 A single elaboratable object will often have several interfaces; e.g. a peripheral can have a CSR and/or Wishbone bus interface, and a pin interface. However, the elaboratable object itself can be an interface object as well, which makes it easy to convert it to Verilog and use standalone since its signature defines the ports the Verilog module needs to have.
 
@@ -393,15 +393,13 @@ Interfaces are described using an enumeration, `amaranth.lib.wiring.Flow`, and t
               ...
           }).freeze()
       ```
-  * `signature.__iter__()` yields `path` recursively for every member and sub-member. A member's path is a tuple containing every name in the chain of attribute accesses required to reach the member. Members are yielded in an ascending lexicographical order. An interface member's path is yielded before the paths of its sub-members are.
-  * `signature.__getitem__(*path)` looks up a member by its path. The flow of the member is flipped as many times as there are `In` signatures between the topmost signature and the signature of the member.
   * `signature.flipped()` returns `False`. If called as `signature.flip().flipped()`, returns `True`.
   * `signature.flip()` returns a signature where every member is `member.flip()`ped. The exact object returned is a proxy object that overrides the methods and attributes defined here such that the flow is flipped, and otherwise forwards attribute accesses untouched. That is, `signature.x = <value>` and `signature.flip().x = <value>` both define an attribute on the original `signature` object, and never on the proxy object alone. When calling method `signature.f` as `signature.flip().f`, `self` is the flipped signature.
-  * `signature.compatible(object)` checks whether an arbitrary Python object is compatible with this signature. To be compatible with a signature:
+  * `signature.is_compliant(object)` checks whether an arbitrary Python object is compliant with this signature. To be compliant with a signature:
     - for every member of the signature, the object must have a corresponding attribute
     - if the member is a port, the attribute value must be a value-castable such that `Value.cast(object.attr)` method returns a `Signal` or a `Const` that has the same width and signedness, and for signals, is not reset-less and has the same reset value as the member
       - a warning may be emitted if the `.shape` of the member and the `.shape()` of `object.attr` are not equal
-    - if the member is an interface, the attribute value must be compatible with the signature of the member
+    - if the member is an interface, the attribute value must be compliant with the signature of the member
     - if the member's `dimensions` are `(p, q, ...)`, the requirements below hold instead for every result of indexing the attribute value with `[i][j]...` where `i in range(p)`, `j in range(q)`, ...
   * `signature.members.create()` creates a dictionary of members from it. This is a helper method for the common part of `signature.create()`. For every member of the signature, the dictionary contains a value equal to:
     * If the member is a port, `Signal(member.shape, reset=member.reset)`.
@@ -498,14 +496,28 @@ To this end, a class `amaranth.lib.wiring.Component` is introduced:
 
 ## Unresolved questions
 
-- Should `Signature.__iter__` and `Signature.__getitem__` exist, or should they be combined and moved to `SignatureMembers[Flipped].flatten`?
+- Should we have `{Signature,FlippedSignature}.flipped`?
+  - Easy enough to emulate using `isinstance`; not a lot of use envisioned
+- Should we move the contents of `Signature.create` to `Interface.__init__`?
+  - Little harm; easily overridden; makes `Signature.create` really simple; makes `Interface` more useful
 
 
 ## Naming questions
 
 - Should `amaranth.lib.wiring` be called something else, like `amaranth.lib.bus` or `amaranth.lib.component`?
-- Should `Signature.compatible` be named something else, like `Signature.is_implemented`?
-- Should `amaranth.lib.wiring.forward` be named something else, like `amaranth.lib.wiring.forwarded` or `amaranth.lib.wiring.forwarding` or `amaranth.lib.wiring.flip`?
+  - bus is short, but not every interface is a bus interface; component (or module, really) puts too much emphasis on the things being interfaced, rather than the interfaces (@jfng)
+  - i wouldn't want the bus keyword to already be taken in my namespaces (@jfng)
+  - I guess my point is mostly that bus is not the opposite of data, but wiring is (@whitequark)
+  - I don't like how long "component" is (@whitequark)
+- Should `Signature.compatible` be named something else, like `Signature.is_implemented_by`, `Signature.is_compliant`, `Signature.complies_with`?
+  - `Signature.compatible` misses an `is_` and does not look like a query method (@jfng)
+  - I mean, "compatible" could mean that two signatures could be connected together. when checking if an object is compliant to a signature, directions also matters (@zyp)
+  - `Signature.complies_with` reverses subject and object (@zyp)
+  - `Signature.is_implemented_by` is verbose (@jfng)
+- Should `amaranth.lib.wiring.forward` be named something else, like `amaranth.lib.wiring.forwarded` or `amaranth.lib.wiring.forwarding` or `amaranth.lib.wiring.flip` or `amaranth.lib.wiring.transpose` or ``amaranth.lib.wiring.transpose` or `amaranth.lib.wiring.inner`?
+  - having two essentially unrelated operations called `flip` when one is already confusing is too much (@whitequark)
+  - reflective programming is a thing (@zyp)
+  - inner(inner(interface)) to flip it back to the original wouldn't make much sense (@zyp)
 
 
 ## Future work
