@@ -418,10 +418,12 @@ This function connects interface objects that satisfy the following requirements
 * For each given path where all members are port members, the reset values of all members with the same path must match.
 * For each given path where all members are port members, exactly one member has an `Out` flow.
 
-The `Out` port member is connected to the `In` port members with the same path as follows:
+If the `In` port member is a signal, it is connected to the `Out` port member with the same path as follows:
 ```python
-m.d.comb += output_port.eq(input_port)
+m.d.comb += input_port.eq(output_port)
 ```
+
+If the `In` port member is a constant, no connection is actually made. The `Out` port member with the same path (if any) must be a constant with the same value.
 
 
 ### Interface forwarding
