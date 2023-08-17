@@ -404,7 +404,9 @@ Interfaces are described using an enumeration, `amaranth.lib.wiring.Flow`, and t
   * `signature.members.create()` creates a dictionary of members from it. This is a helper method for the common part of `signature.create()`. For every member of the signature, the dictionary contains a value equal to:
     * If the member is a port, `Signal(member.shape, reset=member.reset)`.
     * If the member is a signature, `member.signature.create()` for `Out` members, and `member.signature.flip().create()` for `In` members.
-  * `signature.create()` creates an interface object from this signature. To do this, it creates a fresh `amaranth.lib.wiring.Interface()` (which is an empty class) and replaces its dictionary with the result of `signature.members.create()`.  This method is expected to be routinely overridden in `Signature` subclasses to perform actions specific to a particular signature.
+  * `signature.create()` creates an interface object from this signature. To do this, it calls the constructor of `Interface` described below. This method is expected to be routinely overridden in `Signature` subclasses to instantiate subclasses of `Interface`.
+
+Any object can be an interface object if it has the appropriate `signature` property. However, an `amaranth.lib.wiring.Interface` class is introduced, serving two purposes: instantiating interfaces from an anonymous signature, and serving as a convenient base class for custom interface classes. The `Interface` class implements only the `__init__()` method, accepting a signature as a parameter. It assigns `self.signature` to be that signature, and for each item in `signature.members.create()` it creates a corresponding attribute on `self`.
 
 
 ### Interface connection
@@ -501,8 +503,6 @@ To this end, a class `amaranth.lib.wiring.Component` is introduced:
 - Should we have `{Signature,FlippedSignature}.flipped`?
   - Easy enough to emulate using `isinstance`; not a lot of use envisioned
 - Should `Component` collect annotations from the MRO and not just the class itself?
-- Should we move the contents of `Signature.create` to `Interface.__init__`?
-  - Little harm; easily overridden; makes `Signature.create` really simple; makes `Interface` more useful
 
 
 ## Naming questions
