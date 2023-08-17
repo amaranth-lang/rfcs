@@ -393,7 +393,6 @@ Interfaces are described using an enumeration, `amaranth.lib.wiring.Flow`, and t
               ...
           }).freeze()
       ```
-  * `signature.flipped()` returns `False`. If called as `signature.flip().flipped()`, returns `True`.
   * `signature.flip()` returns a signature where every member is `member.flip()`ped. The exact object returned is a proxy object that overrides the methods and attributes defined here such that the flow is flipped, and otherwise forwards attribute accesses untouched. That is, `signature.x = <value>` and `signature.flip().x = <value>` both define an attribute on the original `signature` object, and never on the proxy object alone. When calling method `signature.f` as `signature.flip().f`, `self` is the flipped signature.
   * `signature.is_compliant(object)` checks whether an arbitrary Python object is compliant with this signature. To be compliant with a signature:
     - for every member of the signature, the object must have a corresponding attribute
@@ -405,6 +404,8 @@ Interfaces are described using an enumeration, `amaranth.lib.wiring.Flow`, and t
     * If the member is a port, `Signal(member.shape, reset=member.reset)`.
     * If the member is a signature, `member.signature.create()` for `Out` members, and `member.signature.flip().create()` for `In` members.
   * `signature.create()` creates an interface object from this signature. To do this, it calls the constructor of `Interface` described below. This method is expected to be routinely overridden in `Signature` subclasses to instantiate subclasses of `Interface`.
+
+All of the methods that can be called on `signature` can be called on the object returned by `signature.flip()`, and `self` in that case is `signature.flip()`. This means that in a method defined on a subclass of `Signature`, `self` can be an instance of that type, or an instance of a different type, `FlippedSignature`, which implements the flipping behavior. In the rare case where it is useful to determine which one it is, it is possible to use `type(self) is amaranth.lib.wiring.FlippedSignature`.
 
 Any object can be an interface object if it has the appropriate `signature` property. However, an `amaranth.lib.wiring.Interface` class is introduced, serving two purposes: instantiating interfaces from an anonymous signature, and serving as a convenient base class for custom interface classes. The `Interface` class implements only the `__init__()` method, accepting a signature as a parameter. It assigns `self.signature` to be that signature, and for each item in `signature.members.create()` it creates a corresponding attribute on `self`.
 
@@ -500,8 +501,7 @@ To this end, a class `amaranth.lib.wiring.Component` is introduced:
 
 ## Unresolved questions
 
-- Should we have `{Signature,FlippedSignature}.flipped`?
-  - Easy enough to emulate using `isinstance`; not a lot of use envisioned
+None.
 
 
 ## Naming questions
