@@ -426,9 +426,9 @@ m.d.comb += input_port.eq(output_port)
 If the `In` port member is a constant, no connection is actually made. The `Out` port member with the same path (if any) must be a constant with the same value.
 
 
-### Interface forwarding
+### Interface transposing
 
-In some cases, an outer elaboratable object creates an inner elaboratable object and _forwards_ an interface of the inner object like this:
+In some cases, an outer elaboratable object creates an inner elaboratable object and _transposes_ an interface of the inner object like this:
 
 ```python
 class Outer(Component):
@@ -458,7 +458,7 @@ class Inner(Component):
 
 In this case, `amaranth.lib.wiring.connect(...)` won't help, since an output needs to be connected to an output, and an input to an input.
 
-An additional function `amaranth.lib.wiring.forward(obj)` is added to assist in this case. It returns a proxy object `obj_forward` where `obj_forward.signature` equals `obj.signature.flip()`, and everything else is forwarded identically otherwise. So, the `Outer.elaborate` method can be rewritten as:
+An additional function `amaranth.lib.wiring.transpose(obj)` is added to assist in this case. It returns a proxy object `obj_transposed` where `obj_transposed.signature` equals `obj.signature.flip()`, and everything else is forwarded identically otherwise. So, the `Outer.elaborate` method can be rewritten as:
 
 ```python
 class Outer(Component):
@@ -471,7 +471,7 @@ class Outer(Component):
 
     def elaborate(self, platform):
         m = Module()
-        connect(m, forward(self.bus), self.inner.bus)
+        connect(m, transpose(self.bus), self.inner.bus)
         return m
 ```
 
