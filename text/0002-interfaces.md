@@ -500,6 +500,7 @@ To this end, a class `amaranth.lib.wiring.Component` is introduced:
 
 - Should we have `{Signature,FlippedSignature}.flipped`?
   - Easy enough to emulate using `isinstance`; not a lot of use envisioned
+- Should `Component` collect annotations from the MRO and not just the class itself?
 - Should we move the contents of `Signature.create` to `Interface.__init__`?
   - Little harm; easily overridden; makes `Signature.create` really simple; makes `Interface` more useful
 
