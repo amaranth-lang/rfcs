@@ -487,7 +487,7 @@ This RFC in effect introduces a particular kind of elaboratable object: one that
 
 To this end, a class `amaranth.lib.wiring.Component` is introduced:
 * `Component.__init__` (typically called as `super().__init__()`) updates `self.__dict__` with the result of `self.signature.members.create()`. (If there is a name conflict, it raises an error.)
-* `Component.signature` collects PEP 526 variable annotations in the class, if any, and returns a signature object constructed from these, or raises an error otherwise. The signature object is created per-instance, not per-class, so that it can be safely mutated if this is a part of the workflow.
+* `Component.signature` collects PEP 526 variable annotations in the class's method resolution order chain up to `Component`, if any, and returns a signature object constructed from these, or raises an error otherwise. The signature object is created per-instance, not per-class, so that it can be safely mutated if this is a part of the workflow.
 
 
 ## Alternatives and rationale
@@ -502,7 +502,6 @@ To this end, a class `amaranth.lib.wiring.Component` is introduced:
 
 - Should we have `{Signature,FlippedSignature}.flipped`?
   - Easy enough to emulate using `isinstance`; not a lot of use envisioned
-- Should `Component` collect annotations from the MRO and not just the class itself?
 
 
 ## Naming questions
