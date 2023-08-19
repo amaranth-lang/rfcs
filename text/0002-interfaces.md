@@ -375,7 +375,7 @@ Interfaces are described using an enumeration, `amaranth.lib.wiring.Flow`, and t
     * the `.reset` property raise `TypeError`;
     * the `.signature` property return `signature` if `flow` is `Out`, `signature.flip()` if `flow` is `In`.
     * the `.dimensions` property be `()`.
-  * `member.array(*dimensions)` returns a new `Member` object whose `.dimensions` property is `dimensions`, which is any amount of non-negative numbers, and all other properties are the same as those of `member`.
+  * `member.array(*dimensions)` returns a new `Member` object whose `.dimensions` property is `dimensions`, which is any amount of non-negative numbers, and all other properties are the same as those of `member`. Calling `.array()` on a member with dimensions prepends the new dimensions before the old ones, for composability.
   * `member.flip()` returns a new `Member` object whose `.flow` property is `~member.flow`, and all other properties are the same as those of `member`.
 
 * A `Signature(...)` object describes an interface comprised of named members: ports and nested interfaces (which themselves are described using signature objects).
