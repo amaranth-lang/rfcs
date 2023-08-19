@@ -501,7 +501,7 @@ To this end, a class `amaranth.lib.wiring.Component` is introduced:
 
 ## Unresolved questions
 
-None.
+- The `amaranth.lib.wiring.transpose` is a really badly named function. We need a better one.
 
 
 ## Naming questions
