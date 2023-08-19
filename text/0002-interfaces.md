@@ -429,9 +429,9 @@ m.d.comb += input_port.eq(output_port)
 If the `In` port member is a constant, no connection is actually made. The `Out` port member with the same path (if any) must be a constant with the same value.
 
 
-### Interface transposing
+### Forwarding interfaces
 
-In some cases, an outer elaboratable object creates an inner elaboratable object and _transposes_ an interface of the inner object like this:
+In some cases, an outer elaboratable object creates an inner elaboratable object and exposes an interface of the inner object as its own:
 
 ```python
 class Outer(Component):
@@ -461,7 +461,7 @@ class Inner(Component):
 
 In this case, `amaranth.lib.wiring.connect(...)` won't help, since an output needs to be connected to an output, and an input to an input.
 
-An additional function `amaranth.lib.wiring.transpose(obj)` is added to assist in this case. It returns a proxy object `obj_transposed` where `obj_transposed.signature` equals `obj.signature.flip()`, and everything else is forwarded identically otherwise. So, the `Outer.elaborate` method can be rewritten as:
+An additional function `amaranth.lib.wiring.flipped(obj)` is added to assist in this case. It returns a proxy object `obj_flipped` where `obj_flipped.signature` equals `obj.signature.flip()`, and everything else is forwarded identically otherwise. So, the `Outer.elaborate` method can be rewritten as:
 
 ```python
 class Outer(Component):
@@ -474,7 +474,7 @@ class Outer(Component):
 
     def elaborate(self, platform):
         m = Module()
-        connect(m, transpose(self.bus), self.inner.bus)
+        connect(m, flipped(self.bus), self.inner.bus)
         return m
 ```
 
@@ -497,11 +497,6 @@ To this end, a class `amaranth.lib.wiring.Component` is introduced:
 
 - Replace the `amaranth.lib.wiring.connect` free function with a function `amaranth.hdl.dsl.Module.connect`.
   * It is not a function on `amaranth.hdl.dsl.Module` to avoid privileging the standard interface library over any other library that may be written downstream. At the moment nothing in `amaranth.lib` is special in any way other than its name, and preserving this is valuable to the author.
-
-
-## Unresolved questions
-
-- The `amaranth.lib.wiring.transpose` is a really badly named function. We need a better one.
 
 
 ## Naming questions
