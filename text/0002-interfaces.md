@@ -204,7 +204,7 @@ Although some duplication was eliminated, some more remains: currently, it is ne
 ```python
 class StreamSignature(Signature):
     def __init__(self, payload_shape):
-        return super().__init__({
+        super().__init__({
             "payload": Out(payload_shape),
             "ready": In(1),
             "valid": Out(1)
