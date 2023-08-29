@@ -435,7 +435,7 @@ In some cases, an outer elaboratable object creates an inner elaboratable object
 
 ```python
 class Outer(Component):
-    bus: BusSignature()
+    bus: Out(BusSignature())
 
     def __init__(self):
         super().__init__()
@@ -454,7 +454,7 @@ class Outer(Component):
 
 
 class Inner(Component):
-    bus: BusSignature()
+    bus: Out(BusSignature())
 
     ...
 ```
@@ -465,7 +465,7 @@ An additional function `amaranth.lib.wiring.flipped(obj)` is added to assist in 
 
 ```python
 class Outer(Component):
-    bus: BusSignature()
+    bus: Out(BusSignature())
 
     def __init__(self):
         super().__init__()
