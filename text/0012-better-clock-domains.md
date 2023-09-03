@@ -405,7 +405,7 @@ class MainModule(Elaboratable):
         m.d.comb += self.s0_en.eq(~self.phase)
 
         m.domains.s0 = ClockDomain(m.d.sync, en = self.s0_en)
-        m.domains,s1 = ClockDomain(m.d.sync, en = self.s1_en)
+        m.domains.s1 = ClockDomain(m.d.sync, en = self.s1_en)
 
         m.submodules.sub = sub = SubModule()
 
