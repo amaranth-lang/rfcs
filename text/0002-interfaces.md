@@ -394,6 +394,10 @@ Interfaces are described using an enumeration, `amaranth.lib.wiring.Flow`, and t
           }).freeze()
       ```
   * `signature.flip()` returns a signature where every member is `member.flip()`ped. The exact object returned is a proxy object that overrides the methods and attributes defined here such that the flow is flipped, and otherwise forwards attribute accesses untouched. That is, `signature.x = <value>` and `signature.flip().x = <value>` both define an attribute on the original `signature` object, and never on the proxy object alone. When calling method `signature.f` as `signature.flip().f`, `self` is the flipped signature.
+  * `signature.flatten(object)` returns an iterator yielding a `path, member, value` tuples for each of the ports recursively contained in the signature, where:
+    - `path` is a tuple of strings or integers indicating the sequence of attribute or index accesses that were used to retrieve `value` from `object`
+    - `member` is the port member corresponding to `value`, with the flow flipped as appropriate
+    - `value` is a value-castable object corresponding to the port (usually but not always a `Signal`)
   * `signature.is_compliant(object)` checks whether an arbitrary Python object is compliant with this signature. To be compliant with a signature:
     - for every member of the signature, the object must have a corresponding attribute
     - if the member is a port, the attribute value must be a value-castable such that `Value.cast(object.attr)` method returns a `Signal` or a `Const` that has the same width and signedness, and for signals, is not reset-less and has the same reset value as the member

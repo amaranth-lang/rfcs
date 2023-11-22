@@ -35,6 +35,8 @@ Shape-castable objects must, in addition to the mandatory `.as_shape()` method, 
 
 This method is defined by shape-castable objects to convert arbitrary Python objects into Amaranth constants. For example, if a shape-castable object has complex internal structure, it can accept a dictionary with the values to be filled into various bits of this structure. If `Shape` implemented `ShapeCastable`, the method would be defined as `def const(self, value): return Const(value, self)`.
 
+The value returned by this method can be a `Const` or a value-castable object whose `.as_value()` will return a `Const`.
+
 This method can also be directly called by the developer to construct a constant using a given shape-castable object.
 
 ## Reference-level explanation
@@ -44,9 +46,9 @@ A method `def const(self, obj):` is added on `ShapeCastable`.
 
 The `Signal(shape, reset=)` constructor is changed so that if `isinstance(shape, ShapeCastable)`, then `shape.const(reset)` is used instead of `reset`.
 
-The `.const()` instance method is implemented on `Layout` to accept a `Sequence` or `Mapping` instance and returns a `Const` with a bit pattern that has the fields set to the given values. Overlapping fields are written in the order of iteration of the input. If the field shape is a shape-castable object, then the value for that field is computed using `Const.cast(value, field.shape)`.
+The `.const()` instance method is implemented on `Layout` to accept a `Sequence` or `Mapping` instance and returns a `View` over a `Const` with a bit pattern that has the fields set to the given values. Overlapping fields are written in the order of iteration of the input. If the field shape is a shape-castable object, then the value for that field is computed using `Const.cast(value, field.shape)`.
 
-The `.const()` method is implemented on the metaclass of `Struct` and `Union` as `return self.as_shape().const(obj)`.
+The `.const()` method is implemented on the metaclass of `Struct` and `Union` as `return View(self, self.as_shape().const(obj))`.
 
 The `View(..., reset=)` constructor is changed to pass `reset` through to the `Signal()` constructor.
 
