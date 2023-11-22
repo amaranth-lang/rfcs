@@ -64,7 +64,7 @@ In short, to get a major feature added to Amaranth, one must first get the RFC m
 - Now that your RFC has an open pull request, use the issue number of the PR to update your 0000- prefix to that number.
 - Build consensus and integrate feedback. RFCs that have broad support are much more likely to make progress than those that don't receive any comments. Feel free to reach out to the RFC assignee in particular to get help identifying stakeholders and obstacles.
 - RFCs rarely go through this process unchanged, especially as alternatives and drawbacks are shown. You can make edits, big and small, to the RFC to clarify or change the design, but make changes as new commits to the pull request, and leave a comment on the pull request explaining your changes. Specifically, do not squash or rebase commits after they are visible on the pull request.
-- At some point, a core maintainer will make a decision on the disposition for the RFC (merge or close).
+- At some point, a core maintainer will make a decision on the disposition for the RFC (merge, close, or postpone).
   - This step is taken when enough of the tradeoffs have been discussed that the core maintainer is in a position to make a decision. That does not require consensus amongst all participants in the RFC thread (which is usually impossible). However, the argument supporting the disposition on the RFC needs to have already been clearly articulated, and there should not be a strong consensus against that position.
 
 ## The RFC life-cycle
@@ -93,6 +93,13 @@ Some accepted RFCs represent vital features that need to be implemented right aw
 The author of an RFC is not obligated to implement it. Of course, the RFC author (like any other developer) is welcome to post an implementation for review after the RFC has been accepted.
 
 If you are interested in working on the implementation for an "active" RFC, but cannot determine if someone else is already working on it, feel free to ask (e.g. by leaving a comment on the associated issue).
+
+## RFC Postponement
+[RFC Postponement]: #rfc-postponement
+
+Some RFC pull requests are tagged with the "postponed" label when they are closed (as part of the rejection process). An RFC closed with "postponed" is marked as such because we want neither to think about evaluating the proposal nor about implementing the described feature until some time in the future, and we believe that we can afford to wait until then to do so. Postponed pull requests may be re-opened when the time is right. We don't have any formal process for that, you should ask a core maintainer.
+
+Usually an RFC pull request marked as "postponed" has already passed an informal first round of evaluation, namely the round of "do we think we would ever possibly consider making this change, as outlined in the RFC pull request, or some semi-obvious variation of it." (When the answer to the latter question is "no", then the appropriate response is to close the RFC, not postpone it.)
 
 ## Acknowledgements
 [Acknowledgements]: #acknowledgements

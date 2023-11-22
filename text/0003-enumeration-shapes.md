@@ -4,6 +4,9 @@
 
 # Enumeration shapes
 
+> **Amendments**
+> The behavior described in this RFC was updated by [RFC #4](0004-const-castable-exprs.md).
+
 ## Summary
 [summary]: #summary
 

@@ -4,12 +4,14 @@
 
 # Aggregate data structure library
 
+> **Amendments**
+> The behavior described in this RFC was updated by [RFC #8](0008-aggregate-extensibility.md), [RFC #9](0009-const-init-shape-castable.md), and [RFC #15](0015-lifting-shape-castables.md).
 
 ## Summary
 
 Add a rich set of standard library classes for accessing hierarchical aggregate data an idiomatic way, to fill one of the two major use cases of `Record` while avoiding its downsides.
 
-See also #???.
+See also [RFC #2](0002-interfaces.html).
 
 
 ## Motivation
