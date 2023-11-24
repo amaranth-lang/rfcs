@@ -30,7 +30,9 @@ This RFC proposes a JSON-based format to describe and exchange component metadat
 
 ### Component metadata
 
-An `amaranth.lib.wiring.Component` can provide metadata about itself, represented as a JSON object. This metadata contains a hierarchical description of every port of its interface:
+An `amaranth.lib.wiring.Component` can provide metadata about itself, represented as a JSON object. This metadata contains a hierarchical description of every port of its interface.
+
+The following example defines an `AsyncSerial` component, and outputs its metadata:
 
 ```python3
 from amaranth import *
@@ -179,14 +181,14 @@ The `["interface"]["annotations"]` object, which is empty here, is explained in 
 
 Users can attach arbitrary annotations to an `amaranth.lib.wiring.Signature`, which are automatically collected into the metadata of components using this signature.
 
-An `Annotation` class has a name (e.g. `"org.amaranth-lang.soc.memory-map"`) and a [JSON schema](https://json-schema.org) defining the structure of its instances. To continue our previous example, we add an annotation to `AsyncSerialSignature` that will allow us to describe a [8-N-1](https://en.wikipedia.org/wiki/8-N-1) configuration:
+An `Annotation` class has a name (e.g. `"org.amaranth-lang.soc.memory-map"`) and a [JSON schema](https://json-schema.org) defining the structure of its instances. To continue our `AsyncSerial` example, we add an annotation to `AsyncSerialSignature` that will allow us to describe a [8-N-1](https://en.wikipedia.org/wiki/8-N-1) configuration:
 
 ```python3
 class AsyncSerialAnnotation(Annotation):
-    name = "org.example.serial"
+    name = "com.example.serial"
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.org/schema/0.1/serial",
+        "$id": "https://example.com/schema/1.0/serial",
         "type": "object",
         "properties": {
             "data_bits": {
@@ -217,7 +219,7 @@ class AsyncSerialAnnotation(Annotation):
         return instance
 ```
 
-We can now override the `.annotations` property of `AsyncSerialSignature` to return an instance of our annotation:
+We can attach annotations to a `Signature` subclass by overriding its `.annotations` property:
 
 ```python3
 class AsyncSerialSignature(Signature):
@@ -225,12 +227,10 @@ class AsyncSerialSignature(Signature):
 
     @property
     def annotations(self):
-        return (AsyncSerialAnnotation(self),)
+        return (*super().annotations, AsyncSerialAnnotation(self))
 ```
 
-Note: `Signature.annotations` can return multiple annotations, but they must have different names.
-
-Printing ``json.dumps(serial.metadata.as_json(), indent=4)`` will now output this:
+The JSON object returned by ``serial.metadata.as_json()`` will now use this annotation:
 
 ```json
 {
@@ -318,7 +318,7 @@ Printing ``json.dumps(serial.metadata.as_json(), indent=4)`` will now output thi
             }
         },
         "annotations": {
-            "org.example.serial": {
+            "com.example.serial": {
                 "data_bits": 8,
                 "parity": "none"
             }
@@ -327,14 +327,28 @@ Printing ``json.dumps(serial.metadata.as_json(), indent=4)`` will now output thi
 }
 ```
 
+#### Annotation names and schema URLs
+
+Annotation names must be prefixed by a reversed second-level domain name (e.g. "com.example") that belongs to the person or entity defining the annotation. Annotation names are obtainable from their schema URL (provided by the `"$id"` key of `Annotation.schema`). To ensure this, schema URLs must have the following structure: `"<protocol>://<domain>/schema/<version>/<path>"`. The version of an annotation schema should match the Python package that implements it.
+
+Some examples of valid schema URLs:
+
+- "https://example.com/schema/1.0/serial" for the "com.example.serial" annotation;
+- "https://amaranth-lang.org/schema/0.4/fifo" for "org.amaranth-lang.fifo";
+- "https://amaranth-lang.org/schema/0.1/soc/memory-map" for "org.amaranth-lang.soc.memory-map".
+
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ### Annotations
 
-- add an `Annotation` base class to `amaranth.lib.annotations`, with:
+- add an `Annotation` base class to `amaranth.lib.meta`, with:
     * a `.name` "abstract" class attribute, which must be a string (e.g. "org.amaranth-lang.soc.memory-map").
     * a `.schema` "abstract" class attribute, which must be a JSON schema, as a dict.
+    * a `.__init_subclass__()` class method, which raises an exception if:
+        - `.schema` does not comply with the [2020-12 draft](https://json-schema.org/specification-links#2020-12) of the JSON Schema specification.
+        - `.name` cannot be extracted from the `.schema["$id"]` URL (as explained [here](#annotation-names-and-schema-urls)).
+    - a `.origin` attribute, which returns the Python object described by an annotation instance.
     * a `.validate()` class method, which takes a JSON instance as argument. An exception is raised if the instance does not comply with the schema.
     * a `.as_json()` abstract method, which must return a JSON instance, as a dict. This instance must be compliant with `.schema`, i.e. `self.validate(self.as_json())` must succeed.
 
@@ -344,12 +358,13 @@ The following changes are made to `amaranth.lib.wiring`:
 ### Component metadata
 
 The following changes are made to `amaranth.lib.wiring`:
-- add a `ComponentMetadata` class, inheriting from `Annotation`, where:
-    - `.name` returns "org.amaranth-lang.component".
-    - `.schema` returns a JSON schema describing component metadata. Its definition is detailed below.
+- add a `ComponentMetadata` class, with:
+    - a `.name` class attribute, which returns `"org.amaranth-lang.component"`.
+    - a `.schema` class attribute, which returns a JSON schema of component metadata. Its definition is detailed [below](#component-metadata-schema).
+    - a `.validate()` class method, which takes a JSON instance as argument. An exception is raised if the instance does not comply with the schema.
     - `.__init__()` takes a `Component` object as parameter.
-    -`.origin` returns the component object given in `.__init__()`.
-    - `.as_json()` returns a JSON instance of `.origin`, that complies with `.schema`. It is populated by iterating over the component's interface and annotations.
+    - a `.origin` attribute, which returns the component object given in `.__init__()`.
+    - a `.as_json()` method, which returns a JSON instance of `.origin` that complies with `.schema`. It is populated by iterating over the component's interface and annotations.
 - add a `.metadata` property to `Component`, which returns `ComponentMetadata(self)`.
 
 #### Component metadata schema
@@ -449,32 +464,30 @@ class ComponentMetadata(Annotation):
     # ...
 ```
 
-Notes:
-- Reset values are represented by their two's complement. For example, the reset value of `Member(Out, signed(2), reset=-1)` would be given as `3`.
-- Despite not being enforced in this schema, annotations must be uniquely identified by their name. For example, an `"org.example.serial"` annotation may have only one possible schema.
+Reset values are represented by their two's complement. For example, the reset value of `Member(Out, signed(2), reset=-1)` would be given as `3`.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
 
-- `Annotation` class definitions must be kept in sync with their associated `Signature`. Using `Annotation.validate()` can catch some mismatches, but won't help if one forgets to add a new attribute to the JSON schema.
-- it is possible to define multiple `Annotation` classes with the same `.name` attribute.
+- Developers need to learn the JSON Schema language to define annotations.
+- An annotation schema URL may point to a non-existent domain, despite being well formatted.
+- Handling backward-incompatible changes in new versions of an annotation is left to its consumers.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+- As an alternative, do nothing; let tools and downstream libraries provide non-interoperable mechanisms to introspect components to and from Amaranth designs.
 - Usage of this feature is entirely optional. It has a limited impact on the `amaranth.lib.wiring`, by reserving only two attributes: `Signature.annotations` and `Component.metadata`.
 - JSON schema is an IETF standard that is well supported across tools and programming languages.
+- This metadata format can be translated into other formats, such as [IP-XACT](https://www.accellera.org/downloads/standards/ip-xact).
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-To do before merging:
-- Add support for clock and reset ports of a component.
-
-Out of scope:
-- Add support for port annotations (e.g. to describe non-trivial shapes).
+- The clock and reset ports of a component are omitted from this metadata format. Currently, the clock domains of an Amaranth component are only known at elaboration, whereas this RFC requires metadata to be accessible at any time. While this is a significant limitation for multi-clock components, single-clock components may be assumed to have a positive edge clock `"clk"` and a synchronous reset `"rst"`. Support for arbitrary clock domains should be introduced in later RFCs.
+- Annotating individual ports of an interface is out of the scope of this RFC. Port annotations may be useful to describe non-trivial signal shapes, and introduced in a later RFC.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-While this RFC can apply to any Amaranth component, one of its motivating use cases is the ability to export the interface and behavioral properties of SoC peripherals.
+While this RFC can apply to any Amaranth component, one of its motivating use cases is the ability to export the interface and behavioral properties of SoC peripherals in various formats, such as SVD.
