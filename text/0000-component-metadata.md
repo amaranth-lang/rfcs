@@ -1,5 +1,5 @@
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [amaranth-lang/rfcs#0000](https://github.com/amaranth-lang/rfcs/pull/0000)
+- Start Date: 2024-11-20
+- RFC PR: [amaranth-lang/rfcs#30](https://github.com/amaranth-lang/rfcs/pull/30)
 - Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
 
 # Component metadata RFC
@@ -181,14 +181,14 @@ The `["interface"]["annotations"]` object, which is empty here, is explained in 
 
 Users can attach arbitrary annotations to an `amaranth.lib.wiring.Signature`, which are automatically collected into the metadata of components using this signature.
 
-An `Annotation` class has a name (e.g. `"org.amaranth-lang.soc.memory-map"`) and a [JSON schema](https://json-schema.org) defining the structure of its instances. To continue our `AsyncSerial` example, we add an annotation to `AsyncSerialSignature` that will allow us to describe a [8-N-1](https://en.wikipedia.org/wiki/8-N-1) configuration:
+An `Annotation` class has a name (e.g. `"org.amaranth-lang.amaranth-soc.memory-map"`) and a [JSON schema](https://json-schema.org) defining the structure of its instances. To continue our `AsyncSerial` example, we add an annotation to `AsyncSerialSignature` that will allow us to describe a [8-N-1](https://en.wikipedia.org/wiki/8-N-1) configuration:
 
 ```python3
 class AsyncSerialAnnotation(Annotation):
     name = "com.example.serial"
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/schema/1.0/serial",
+        "$id": "https://example.com/schema/serial/1.0.json",
         "type": "object",
         "properties": {
             "data_bits": {
@@ -329,13 +329,13 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
 
 #### Annotation names and schema URLs
 
-Annotation names must be prefixed by a reversed second-level domain name (e.g. "com.example") that belongs to the person or entity defining the annotation. Annotation names are obtainable from their schema URL (provided by the `"$id"` key of `Annotation.schema`). To ensure this, schema URLs must have the following structure: `"<protocol>://<domain>/schema/<version>/<path>"`. The version of an annotation schema should match the Python package that implements it.
+Annotation names must be prefixed by a reversed domain name (e.g. "com.example") that belongs to the person or entity defining the annotation. Annotation names are obtainable from their schema URL (provided by the `"$id"` key of `Annotation.schema`). To ensure this, schema URLs must have the following structure: `"<protocol>://<domain>/schema/<path>/<version>.json"`. The version of an annotation schema should match the Python package that implements it.
 
 Some examples of valid schema URLs:
 
-- "https://example.com/schema/1.0/serial" for the "com.example.serial" annotation;
-- "https://amaranth-lang.org/schema/0.4/fifo" for "org.amaranth-lang.fifo";
-- "https://amaranth-lang.org/schema/0.1/soc/memory-map" for "org.amaranth-lang.soc.memory-map".
+- "https://example.github.io/schema/serial/1.0.json" for the "io.github.example.serial" annotation;
+- "https://amaranth-lang.org/schema/amaranth/fifo/4.0.json" for "org.amaranth-lang.amaranth.fifo";
+- "https://amaranth-lang.org/schema/amaranth-soc/memory-map/1.0.json" for "org.amaranth-lang.amaranth-soc.memory-map".
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -343,7 +343,7 @@ Some examples of valid schema URLs:
 ### Annotations
 
 - add an `Annotation` base class to `amaranth.lib.meta`, with:
-    * a `.name` "abstract" class attribute, which must be a string (e.g. "org.amaranth-lang.soc.memory-map").
+    * a `.name` "abstract" class attribute, which must be a string (e.g. "org.amaranth-lang.amaranth-soc.memory-map").
     * a `.schema` "abstract" class attribute, which must be a JSON schema, as a dict.
     * a `.__init_subclass__()` class method, which raises an exception if:
         - `.schema` does not comply with the [2020-12 draft](https://json-schema.org/specification-links#2020-12) of the JSON Schema specification.
@@ -359,7 +359,7 @@ The following changes are made to `amaranth.lib.wiring`:
 
 The following changes are made to `amaranth.lib.wiring`:
 - add a `ComponentMetadata` class, with:
-    - a `.name` class attribute, which returns `"org.amaranth-lang.component"`.
+    - a `.name` class attribute, which returns `"org.amaranth-lang.amaranth.component"`.
     - a `.schema` class attribute, which returns a JSON schema of component metadata. Its definition is detailed [below](#component-metadata-schema).
     - a `.validate()` class method, which takes a JSON instance as argument. An exception is raised if the instance does not comply with the schema.
     - `.__init__()` takes a `Component` object as parameter.
@@ -371,10 +371,10 @@ The following changes are made to `amaranth.lib.wiring`:
 
 ```python3
 class ComponentMetadata(Annotation):
-    name   = "org.amaranth-lang.component"
+    name   = "org.amaranth-lang.amaranth.component"
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://amaranth-lang.org/schema/amaranth/0.4/component",
+        "$id": "https://amaranth-lang.org/schema/amaranth/component/0.4.json",
         "type": "object",
         "properties": {
             "interface": {
