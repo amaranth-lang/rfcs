@@ -25,41 +25,55 @@ TODO
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This RFC proposes a library addition `amaranth.lib.fixedpoint` with the following contents:
+This RFC proposes a library addition `amaranth.lib.fixed` with the following contents:
 
-`FixedPoint` is a `ShapeCastable` subclass.
+`fixed.Shape` is a `ShapeCastable` subclass.
 The following operations are defined on it:
 
-- `FixedPoint(f_width, /, *, signed)`: Create a `FixedPoint` with `f_width` fractional bits.
-- `FixedPoint(i_width, f_width, /, *, signed)`: Create a `FixedPoint` with `i_width` integer bits and `f_width` fractional bits.
-- `FixedPoint.cast(shape)`: Cast `shape` to a `FixedPoint` instance.
+- `fixed.Shape(f_width, /, *, signed)`: Create a `fixed.Shape` with zero integer bits and `f_width` fractional bits.
+- `fixed.Shape(i_width, f_width, /, *, signed)`: Create a `fixed.Shape` with `i_width` integer bits and `f_width` fractional bits.
+  - The sign bit is not included in `i_width` or `f_width`, so a `fixed.Shape(7, 8, signed=True)` will be 16 bits wide.
+- `fixed.Shape.cast(shape, f_width=0)`: Cast `shape` to a `fixed.Shape` instance.
 - `.i_width`, `.f_width`, `.signed`: Width and signedness properties.
-- `.const(value)`: Create a fixed point constant from an `int` or `float`, rounded to the closest representable value.
+- `.const(value)`: Create a `fixed.Const` from `value`.
 - `.as_shape()`: Return the underlying `Shape`.
-- `.__call__(target)`: Create a `FixedPointValue` over `target`.
+- `.__call__(target)`: Create a `fixed.Value` over `target`.
 
-`Q(*args)` is an alias for `FixedPoint(*args, signed=True)`.
+`SQ(*args)` is an alias for `fixed.Shape(*args, signed=True)`.
 
-`UQ(*args)` is an alias for `FixedPoint(*args, signed=False)`.
+`UQ(*args)` is an alias for `fixed.Shape(*args, signed=False)`.
 
-`FixedPointValue` is a `ValueCastable` subclass.
+`fixed.Value` is a `ValueCastable` subclass.
 The following operations are defined on it:
 
-- `FixedPointValue(shape, target)`: Create a `FixedPointValue` with `shape` over `target`.
-- `FixedPointValue.cast(value)`: Cast `value` to a `FixedPointValue`.
+- `fixed.Value(shape, target)`: Create a `fixed.Value` with `shape` over `target`.
+- `fixed.Value.cast(value, f_width=0)`: Cast `value` to a `fixed.Value`.
 - `.i_width`, `.f_width`, `.signed`: Width and signedness properties.
-- `.shape()`: Return the `FixedPoint` this was created from.
+- `.shape()`: Return the `fixed.Shape` this was created from.
 - `.as_value()`: Return the underlying value.
 - `.eq(value)`: Assign `value`.
-  - If `value` is a `FixedPointValue`, the precision will be extended or rounded as required.
-  - If `value` is an `int` or `float`, the value will be rounded to the closest representable value.
   - If `value` is a `Value`, it'll be assigned directly to the underlying `Value`.
-- `.round(f_width=0)`: Return a new `FixedPointValue` with precision changed to `f_width`, rounding as required.
+  - If `value` is an `int` or `float`, it'll be cast to a `fixed.Const` first.
+  - If `value` is a `fixed.Value`, the precision will be extended or rounded as required.
+- `.round(f_width=0)`: Return a new `fixed.Value` with precision changed to `f_width`, rounding as required.
 - `.__add__(other)`, `.__radd__(other)`, `.__sub__(other)`, `.__rsub__(other)`, `.__mul__(other)`, `.__rmul__(other)`: Binary arithmetic operations.
-  - If `other` is a `Value` or an `int`, it'll be cast to a `FixedPointValue` first.
+  - If `other` is a `Value`, it'll be cast to a `fixed.Value` first.
+  - If `other` is an `int`, it'll be cast to a `fixed.Const` first.
   - If `other` is a `float`: TBD
-  - The result will be a new `FixedPointValue` with enough precision to hold any resulting value without rounding or overflowing.
+  - The result will be a new `fixed.Value` with enough precision to hold any resulting value without rounding or overflowing.
+- `.__lshift__(other)`, `.__rshift__(other)`: Bit shift operations.
 - `.__neg__()`, `.__pos__()`, `.__abs__()`: Unary arithmetic operations.
+
+`fixed.Const` is a `fixed.Value` subclass.
+The following additional operations are defined on it:
+
+- `fixed.Const(value, shape=None)`: Create a `fixed.Const` from `value`. `shape` must be a `fixed.Shape` if specified.
+  - If `value` is an `int` and `shape` is not specified, the smallest shape that will fit `value` will be selected.
+  - If `value` is a `float` and `shape` is not specified, the smallest shape that gives a perfect representation will be selected.
+    If `shape` is specified, `value` will be rounded to the closest representable value first.
+- `.as_integer_ratio()`: Return the value represented as an integer ratio `tuple`.
+- `.as_float()`: Return the value represented as a `float`.
+- Operators are extended to return a `fixed.Const` if all operands are constant.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -69,18 +83,23 @@ TBD
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- `FixedPointValue.eq()` could cast a `Value` to a `FixedPointValue` first, and thereby shift the value to the integer part instead of assigning directly to the underlying value.
-  However, `Value.eq()` would always grab the underlying value of a `FixedPointValue`, and for consistency both `.eq()` operations should behave in the same manner.
+- `fixed.Value.eq()` could cast a `Value` to a `fixed.Value` first, and thereby shift the value to the integer part instead of assigning directly to the underlying value.
+  However, `Value.eq()` would always grab the underlying value of a `fixed.Value`, and for consistency both `.eq()` operations should behave in the same manner.
   - If we wanted to go the other way, this RFC could be deferred until another RFC allowing `ValueCastable` to override reflected `.eq()` have been merged.
     However, having to explicitly do `value.eq(fp_value.round())` when rounding is desired is arguably preferable to having `value.eq(fp_value)` do an implicit rounding.
 
-- Unlike `.eq()`, it makes sense for arithmetic operations to cast a `Value` to `FixedPointValue`.
+- Unlike `.eq()`, it makes sense for arithmetic operations to cast a `Value` to `fixed.Value`.
   Multiplying an integer with a fixedpoint constant and rounding the result back to an integer is a reasonable and likely common thing to want to do.
+
+- There's two slightly different [Q notation](https://en.wikipedia.org/wiki/Q_(number_format)) definitions, namely whether the bit counts includes the sign bit or not.
+  Not having the sign bit included seems more common, and has the advantage that a number has the same fractional precision whether `i_width` is 0 or not.
+
+- While Q notation names the signed type `Q`, it's more consistent for Amaranth to use `SQ` since other Amaranth types defaults to unsigned.
 
 ## Prior art
 [prior-art]: #prior-art
 
-[Q notation](https://en.wikipedia.org/wiki/Q_(number_format)) is a common and convenient way to specify floating point types.
+[Q notation](https://en.wikipedia.org/wiki/Q_(number_format)) is a common and convenient way to specify fixed point types.
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -91,12 +110,23 @@ TBD
   - We could use the same width for `other` as for `self`, adjusted to the appropriate exponent for the value.
   - We could outright reject it, requiring the user to explicitly specify precision like e.g. `value * Q(15).const(1 / 3)`.
 
-- There's two slightly different [Q notation](https://en.wikipedia.org/wiki/Q_(number_format)) definitions, namely whether the bit counts includes the sign bit or not.
-  `UQ(15)` and `UQ(7, 8)` would be 15 bits in either convention, but `Q(15)` and `Q(7, 8)` would be 15 or 16 bits depending on the convention. Which do we pick?
-
 - Are there any other operations that would be good to have?
 
-- Bikeshed all the names.
+- Are there any operations that would be good to *not* have?
+  - This API (`fixed.Shape.cast()`) seems confusing and difficult to use. Should we expose it at all? (@whitequark)
+
+- `Decimal` and/or `Fraction` support?
+  - This could make sense to have, but both can represent values that's not representable as binary fixed point.
+    On the other hand, a Python `float` can perfectly represent any fixed point value up to a total width of 53 bits and any `float` value is perfectly representable as fixed point.
+
+- Name all the things.
+  - Library name:
+    - Bikeshed: `lib.fixed`, `lib.fixnum`. (@whitequark)
+  - Type names:
+    - `fixed.Shape` and `fixed.Value` are one option, though I can see why others may object to it. (@whitequark)
+  - I feel like the `i_width` and `f_width` names are difficult enough to read that it's of more importance than bikeshedding to come up with something more readable. (@whitequark)
+    - `.int_bits`, `.frac_bits`?
+    - cursed option: `int, frac = x.width`?
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
