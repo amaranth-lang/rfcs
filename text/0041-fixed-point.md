@@ -56,13 +56,14 @@ The following operations are defined on it:
   - If `value` is an `int` or `float`, it'll be cast to a `fixed.Const` first.
   - If `value` is a `fixed.Value`, the precision will be extended or rounded as required.
 - `.round(f_width=0)`: Return a new `fixed.Value` with precision changed to `f_width`, rounding as required.
-- `.__add__(other)`, `.__radd__(other)`, `.__sub__(other)`, `.__rsub__(other)`, `.__mul__(other)`, `.__rmul__(other)`: Binary arithmetic operations.
+- `.__add__(other)`, `.__radd__(other)`, `.__sub__(other)`, `.__rsub__(other)`, `.__mul__(other)`, `.__rmul__(other)`: Binary arithmetic operators.
   - If `other` is a `Value`, it'll be cast to a `fixed.Value` first.
   - If `other` is an `int`, it'll be cast to a `fixed.Const` first.
   - If `other` is a `float`: TBD
   - The result will be a new `fixed.Value` with enough precision to hold any resulting value without rounding or overflowing.
-- `.__lshift__(other)`, `.__rshift__(other)`: Bit shift operations.
-- `.__neg__()`, `.__pos__()`, `.__abs__()`: Unary arithmetic operations.
+- `.__lshift__(other)`, `.__rshift__(other)`: Bit shift operators.
+- `.__neg__()`, `.__pos__()`, `.__abs__()`: Unary arithmetic operators.
+- `.__lt__(other)`, `.__le__(other)`, `.__eq__(other)`, `.__ne__(other)`, `.__gt__(other)`, `.__ge__(other)`: Comparison operators.
 
 `fixed.Const` is a `fixed.Value` subclass.
 The following additional operations are defined on it:
@@ -110,6 +111,13 @@ TBD
   - We could use the same width for `other` as for `self`, adjusted to the appropriate exponent for the value.
   - We could outright reject it, requiring the user to explicitly specify precision like e.g. `value * Q(15).const(1 / 3)`.
 
+- How should we handle rounding?
+  - Truncating and adding the most significant truncated bit is cheap and is effectively round to nearest with ties rounded towards positive infinity.
+  - Simply truncating is free, rounds towards negative infinity.
+  - IEEE 754 defaults to round to nearest, ties to even, which is more expensive to implement.
+  - Should we make it user selectable?
+    - We still need a default mode used when a higher precision number is passed to `.eq()`.
+
 - Are there any other operations that would be good to have?
 
 - Are there any operations that would be good to *not* have?
@@ -127,6 +135,7 @@ TBD
   - I feel like the `i_width` and `f_width` names are difficult enough to read that it's of more importance than bikeshedding to come up with something more readable. (@whitequark)
     - `.int_bits`, `.frac_bits`?
     - cursed option: `int, frac = x.width`?
+  - `.round()` is a bit awkwardly named when it's used both to increase and decrease precision.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
