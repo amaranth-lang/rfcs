@@ -47,6 +47,8 @@ The `Memory.width` attribute is deprecated and removed in a later Amaranth versi
 
 `ReadPort.data` and `WritePort.data` are updated to be `Signal(memory.shape)`.
 
+`WritePort.__init__()` raises an exception if `granularity` is specified and `shape` is not an unsigned `Shape`.
+
 `DummyPort.__init__()` gets a new `data_shape` argument. `data_width` is deprecated and removed in a later Amaranth version.
 
 ## Drawbacks
