@@ -1,6 +1,6 @@
-- Start Date: 2023-08-07
+- Start Date: 2024-01-08
 - RFC PR: [amaranth-lang/rfcs#17](https://github.com/amaranth-lang/rfcs/pull/17)
-- Amaranth Issue: None
+- Amaranth Issue: [amaranth-lang/amaranth#1025](https://github.com/amaranth-lang/amaranth/issues/1025)
 
 # Remove `log2_int`
 
@@ -40,7 +40,7 @@ In practice, `log2_int` differs from `math.log2` in the following ways:
 
 Amaranth provides two log2 functions for integer arithmetic:
 
-* `ceil_log2(n)`, where `n` is assumed to be any positive integer
+* `ceil_log2(n)`, where `n` is assumed to be any non-negative integer
 * `exact_log2(n)`, where `n` is assumed to be an integer power-of-2
 
 For example:
@@ -64,7 +64,7 @@ A `ceil_log2(n)` function is added, that:
 
 * returns the integer log2 of the smallest power-of-2 greater than or equal to `n`;
 * raises a `TypeError` if `n` is not an integer;
-* raises a `ValueError` if `n` is lesser than or equal to 0.
+* raises a `ValueError` if `n` is lesser than 0.
 
 An `exact_log2(n)` function is added, that:
 
@@ -114,6 +114,6 @@ None.
 
 ## Acknowledgements
 
-[@mwkmwkmwk] provided valuable feedback while this RFC was being drafted.
+[@wanda-phi] provided valuable feedback while this RFC was being drafted.
 
-[@mwkmwkmwk]: https://github.com/mwkmwkmwk
+[@wanda-phi]: https://github.com/wanda-phi
