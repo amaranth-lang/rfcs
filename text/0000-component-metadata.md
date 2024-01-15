@@ -403,6 +403,7 @@ class ComponentMetadata(Annotation):
                                             },
                                             "name": {
                                                 "type": "string",
+                                                "pattern": "^[A-Za-z][A-Za-z0-9_]*$",
                                             },
                                             "dir": {
                                                 "enum": ["in", "out"],
