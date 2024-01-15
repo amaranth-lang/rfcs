@@ -178,10 +178,10 @@ An `Annotation` class has a name (e.g. `"org.amaranth-lang.amaranth-soc.memory-m
 
 ```python3
 class AsyncSerialAnnotation(Annotation):
-    name = "com.example.serial"
+    name = "com.example.foo.serial"
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://example.com/schema/serial/1.0.json",
+        "$id": "https://example.com/schema/foo/1.0/serial.json",
         "type": "object",
         "properties": {
             "data_bits": {
@@ -307,11 +307,11 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
                 "dir": "out",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             }
         },
         "annotations": {
-            "com.example.serial": {
+            "com.example.foo.serial": {
                 "data_bits": 8,
                 "parity": "none"
             }
@@ -322,13 +322,30 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
 
 #### Annotation names and schema URLs
 
-Annotation names must be prefixed by a reversed domain name (e.g. "com.example") that belongs to the person or entity defining the annotation. Annotation names are obtainable from their schema URL (provided by the `"$id"` key of `Annotation.schema`). To ensure this, schema URLs must have the following structure: `"<protocol>://<domain>/schema/<path>/<version>.json"`. The version of an annotation schema should match the Python package that implements it.
+An `Annotation` schema must have a `"$id"` property, which holds an URL that serves as its unique identifier. This URL must have the following format:
+
+`<protocol>://<domain>/schema/<package>/<version>/<path>.json`
+
+where:
+
+* `<domain>` is a domain name registered to the person or entity defining the annotation;
+* `<package>` is the name of the Python package providing the `Annotation` subclass;
+* `<version>` is the version of the aforementioned package;
+* `<path>` is a non-empty string.
+
+An `Annotation` name should be retrievable from the `"$id"` property of its schema. Its name is the concatenation of the following parts, separated by `"."`:
+
+* `<domain>`, reversed (e.g. "com.example");
+* `<package>`;
+* `<path>`, split using `"/"` as separator.
 
 Some examples of valid schema URLs:
 
-- "https://example.github.io/schema/serial/1.0.json" for the "io.github.example.serial" annotation;
-- "https://amaranth-lang.org/schema/amaranth/fifo/4.0.json" for "org.amaranth-lang.amaranth.fifo";
-- "https://amaranth-lang.org/schema/amaranth-soc/memory-map/1.0.json" for "org.amaranth-lang.amaranth-soc.memory-map".
+- "https://example.github.io/schema/foo/1.0/serial.json" for the "io.github.example.foo.serial" annotation;
+- "https://amaranth-lang.org/schema/amaranth/0.4/fifo.json" for "org.amaranth-lang.amaranth.fifo";
+- "https://amaranth-lang.org/schema/amaranth-soc/0.1/memory-map.json" for "org.amaranth-lang.amaranth-soc.memory-map".
+
+Changes to schema definitions hosted at https://amaranth-lang.org should follow the [RFC process](https://github.com/amaranth-lang/rfcs).
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -367,7 +384,7 @@ class ComponentMetadata(Annotation):
     name   = "org.amaranth-lang.amaranth.component"
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "$id": "https://amaranth-lang.org/schema/amaranth/component/0.4.json",
+        "$id": "https://amaranth-lang.org/schema/amaranth/0.5/component.json",
         "type": "object",
         "properties": {
             "interface": {
