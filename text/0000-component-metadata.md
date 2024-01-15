@@ -63,14 +63,7 @@ class AsyncSerialSignature(Signature):
 
 class AsyncSerial(Component):
     def __init__(self, *, divisor_reset, divisor_bits, data_bits=8, parity="none"):
-        self.divisor_reset = divisor_reset
-        self.divisor_bits  = divisor_bits
-        self.data_bits     = data_bits
-        self.parity        = parity
-
-    @property
-    def signature(self):
-        return AsyncSerialSignature(self.divisor_reset, self.divisor_bits, self.data_bits, self.parity)
+        super().__init__(AsyncSerialSignature(divisor_reset, divisor_bits, data_bits, parity))
 
 
 if __name__ == "__main__":
@@ -95,7 +88,7 @@ The `.metadata` property of a `Component` returns a `ComponentMetadata` instance
                 "dir": "in",
                 "width": 10,
                 "signed": false,
-                "reset": 868
+                "reset": "868"
             },
             "rx_ack": {
                 "type": "port",
@@ -103,7 +96,7 @@ The `.metadata` property of a `Component` returns a `ComponentMetadata` instance
                 "dir": "in",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "rx_data": {
                 "type": "port",
@@ -111,7 +104,7 @@ The `.metadata` property of a `Component` returns a `ComponentMetadata` instance
                 "dir": "out",
                 "width": 8,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "rx_err": {
                 "type": "port",
@@ -119,7 +112,7 @@ The `.metadata` property of a `Component` returns a `ComponentMetadata` instance
                 "dir": "out",
                 "width": 3,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "rx_i": {
                 "type": "port",
@@ -127,7 +120,7 @@ The `.metadata` property of a `Component` returns a `ComponentMetadata` instance
                 "dir": "in",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "rx_rdy": {
                 "type": "port",
@@ -135,7 +128,7 @@ The `.metadata` property of a `Component` returns a `ComponentMetadata` instance
                 "dir": "out",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "tx_ack": {
                 "type": "port",
@@ -143,7 +136,7 @@ The `.metadata` property of a `Component` returns a `ComponentMetadata` instance
                 "dir": "in",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "tx_data": {
                 "type": "port",
@@ -151,7 +144,7 @@ The `.metadata` property of a `Component` returns a `ComponentMetadata` instance
                 "dir": "in",
                 "width": 8,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "tx_o": {
                 "type": "port",
@@ -159,7 +152,7 @@ The `.metadata` property of a `Component` returns a `ComponentMetadata` instance
                 "dir": "out",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "tx_rdy": {
                 "type": "port",
@@ -167,7 +160,7 @@ The `.metadata` property of a `Component` returns a `ComponentMetadata` instance
                 "dir": "out",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             }
         },
         "annotations": {}
@@ -242,7 +235,7 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
                 "dir": "in",
                 "width": 10,
                 "signed": false,
-                "reset": 868
+                "reset": "868"
             },
             "rx_ack": {
                 "type": "port",
@@ -250,7 +243,7 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
                 "dir": "in",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "rx_data": {
                 "type": "port",
@@ -258,7 +251,7 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
                 "dir": "out",
                 "width": 8,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "rx_err": {
                 "type": "port",
@@ -266,7 +259,7 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
                 "dir": "out",
                 "width": 3,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "rx_i": {
                 "type": "port",
@@ -274,7 +267,7 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
                 "dir": "in",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "rx_rdy": {
                 "type": "port",
@@ -282,7 +275,7 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
                 "dir": "out",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "tx_ack": {
                 "type": "port",
@@ -290,7 +283,7 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
                 "dir": "in",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "tx_data": {
                 "type": "port",
@@ -298,7 +291,7 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
                 "dir": "in",
                 "width": 8,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "tx_o": {
                 "type": "port",
@@ -306,7 +299,7 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
                 "dir": "out",
                 "width": 1,
                 "signed": false,
-                "reset": 0
+                "reset": "0"
             },
             "tx_rdy": {
                 "type": "port",
@@ -405,8 +398,8 @@ class ComponentMetadata(Annotation):
                                                 "type": "boolean",
                                             },
                                             "reset": {
-                                                "type": "integer",
-                                                "minimum": 0,
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+$",
                                             },
                                         },
                                         "additionalProperties": False,
@@ -464,7 +457,7 @@ class ComponentMetadata(Annotation):
     # ...
 ```
 
-Reset values are represented by their two's complement. For example, the reset value of `Member(Out, signed(2), reset=-1)` would be given as `3`.
+Reset values are serialized to strings (e.g. "-1"), because JSON can only represent integers up to 2^53.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
