@@ -1,6 +1,6 @@
-- Start Date: 2023-11-20
+- Start Date: (fill me in with today's date, YYYY-MM-DD)
 - RFC PR: [amaranth-lang/rfcs#30](https://github.com/amaranth-lang/rfcs/pull/30)
-- Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
+- Amaranth Issue: [amaranth-lang/amaranth#978](https://github.com/amaranth-lang/amaranth/issues/978)
 
 # Component metadata RFC
 
