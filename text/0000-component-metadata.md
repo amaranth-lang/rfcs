@@ -211,16 +211,17 @@ class AsyncSerialAnnotation(Annotation):
         return instance
 ```
 
-We can attach annotations to a `Signature` subclass by overriding its `.annotations` property:
+We can attach annotations to a `Signature` subclass by overriding its `.annotations()` method:
 
 ```python3
 class AsyncSerialSignature(Signature):
     # ...
 
-    @property
-    def annotations(self):
-        return (*super().annotations, AsyncSerialAnnotation(self))
+    def annotations(self, obj):
+        return (*super().annotations(obj), AsyncSerialAnnotation(self))
 ```
+
+In this case, `AsyncSerialAnnotation` depends on immutable metadata attached to `AsyncSerialSignature` (`.data_bits` and `.parity`).
 
 The JSON object returned by ``serial.metadata.as_json()`` will now use this annotation:
 
@@ -353,7 +354,7 @@ Changes to schema definitions hosted at https://amaranth-lang.org should follow 
     * a `.as_json()` abstract method, which must return a JSON instance, as a dict. This instance must be compliant with `.schema`, i.e. `self.validate(self.as_json())` must succeed.
 
 The following changes are made to `amaranth.lib.wiring`:
-- add a `.annotations` property to `Signature`, which returns an empty tuple. If overriden, it must return an iterable of `Annotation` objects.
+- add a `.annotations(self, obj)` method to `Signature`, which returns an empty tuple. If overriden, it must return an iterable of `Annotation` objects. `obj` is an interface object that complies with this signature, i.e. `self.is_compliant(obj)` must succeed.
 
 ### Component metadata
 
