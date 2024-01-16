@@ -178,7 +178,6 @@ An `Annotation` class has a name (e.g. `"org.amaranth-lang.amaranth-soc.memory-m
 
 ```python3
 class AsyncSerialAnnotation(Annotation):
-    name = "com.example.foo.serial"
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "https://example.com/schema/foo/1.0/serial.json",
@@ -311,7 +310,7 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
             }
         },
         "annotations": {
-            "com.example.foo.serial": {
+            "https://example.com/schema/foo/1.0/serial.json": {
                 "data_bits": 8,
                 "parity": "none"
             }
@@ -320,9 +319,9 @@ The JSON object returned by ``serial.metadata.as_json()`` will now use this anno
 }
 ```
 
-#### Annotation names and schema URLs
+#### Annotation schema URLs
 
-An `Annotation` schema must have a `"$id"` property, which holds an URL that serves as its unique identifier. This URL must have the following format:
+An `Annotation` schema must have a `"$id"` property, which holds an URL that serves as its unique identifier. The following convention is required for the `"$id"` of schemas hosted at https://amaranth-lang.org, and suggested otherwise:
 
 `<protocol>://<domain>/schema/<package>/<version>/<path>.json`
 
@@ -333,17 +332,10 @@ where:
 * `<version>` is the version of the aforementioned package;
 * `<path>` is a non-empty string.
 
-An `Annotation` name should be retrievable from the `"$id"` property of its schema. Its name is the concatenation of the following parts, separated by `"."`:
+For example:
 
-* `<domain>`, reversed (e.g. "com.example");
-* `<package>`;
-* `<path>`, split using `"/"` as separator.
-
-Some examples of valid schema URLs:
-
-- "https://example.github.io/schema/foo/1.0/serial.json" for the "io.github.example.foo.serial" annotation;
-- "https://amaranth-lang.org/schema/amaranth/0.4/fifo.json" for "org.amaranth-lang.amaranth.fifo";
-- "https://amaranth-lang.org/schema/amaranth-soc/0.1/memory-map.json" for "org.amaranth-lang.amaranth-soc.memory-map".
+- "https://amaranth-lang.org/schema/amaranth/0.5/fifo.json";
+- "https://amaranth-lang.org/schema/amaranth-soc/0.1/memory-map.json".
 
 Changes to schema definitions hosted at https://amaranth-lang.org should follow the [RFC process](https://github.com/amaranth-lang/rfcs).
 
@@ -353,11 +345,9 @@ Changes to schema definitions hosted at https://amaranth-lang.org should follow 
 ### Annotations
 
 - add an `Annotation` base class to `amaranth.lib.meta`, with:
-    * a `.name` "abstract" class attribute, which must be a string (e.g. "org.amaranth-lang.amaranth-soc.memory-map").
     * a `.schema` "abstract" class attribute, which must be a JSON schema, as a dict.
     * a `.__init_subclass__()` class method, which raises an exception if:
         - `.schema` does not comply with the [2020-12 draft](https://json-schema.org/specification-links#2020-12) of the JSON Schema specification.
-        - `.name` cannot be extracted from the `.schema["$id"]` URL (as explained [here](#annotation-names-and-schema-urls)).
     - a `.origin` attribute, which returns the Python object described by an annotation instance.
     * a `.validate()` class method, which takes a JSON instance as argument. An exception is raised if the instance does not comply with the schema.
     * a `.as_json()` abstract method, which must return a JSON instance, as a dict. This instance must be compliant with `.schema`, i.e. `self.validate(self.as_json())` must succeed.
@@ -369,7 +359,6 @@ The following changes are made to `amaranth.lib.wiring`:
 
 The following changes are made to `amaranth.lib.wiring`:
 - add a `ComponentMetadata` class, with:
-    - a `.name` class attribute, which returns `"org.amaranth-lang.amaranth.component"`.
     - a `.schema` class attribute, which returns a JSON schema of component metadata. Its definition is detailed [below](#component-metadata-schema).
     - a `.validate()` class method, which takes a JSON instance as argument. An exception is raised if the instance does not comply with the schema.
     - `.__init__()` takes a `Component` object as parameter.
@@ -381,7 +370,6 @@ The following changes are made to `amaranth.lib.wiring`:
 
 ```python3
 class ComponentMetadata(Annotation):
-    name   = "org.amaranth-lang.amaranth.component"
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "$id": "https://amaranth-lang.org/schema/amaranth/0.5/component.json",
