@@ -1,6 +1,6 @@
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2024-01-22
 - RFC PR: [amaranth-lang/rfcs#40](https://github.com/amaranth-lang/rfcs/pull/40)
-- Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
+- Amaranth Issue: [amaranth-lang/amaranth#1048](https://github.com/amaranth-lang/amaranth/issues/1048)
 
 # Arbitrary `Memory` shapes
 
@@ -43,7 +43,9 @@ The `width` argument to `Memory.__init__()` deprecated and removed in a later Am
 
 The `Memory.shape` attribute is added.
 
-The `Memory.width` attribute is deprecated and removed in a later Amaranth version.
+The `Memory.width` attribute is made a read-only wrapper for `Shape.cast(self.shape).width`.
+
+The `Memory.depth` attribute is made read-only.
 
 `ReadPort.data` and `WritePort.data` are updated to be `Signal(memory.shape)`.
 
@@ -70,9 +72,12 @@ Being able to make a `Memory` with an arbitrary element shape is analogous to be
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- `Memory.width` is still meaningful, but is it useful enough that we should consider keeping it?
+None.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-Once `Memory` is extended to support arbitrary shapes, it is natural that higher level constructs building on `Memory` like FIFOs gets the same treatment.  
+- Once `Memory` is extended to support arbitrary shapes, it is natural that higher level constructs building on `Memory` like FIFOs gets the same treatment.  
+
+- `granularity` could later be allowed to be used with other kinds of shapes.
+  - This is desirable for e.g. `lib.data.ArrayLayout`, but is not currently possible since `Memory` lives in `hdl.mem`, and `hdl` can't depend on `lib`.
