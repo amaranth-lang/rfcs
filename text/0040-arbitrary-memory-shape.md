@@ -4,6 +4,9 @@
 
 # Arbitrary `Memory` shapes
 
+> **Obsoleted by**
+> This RFC is obsoleted by [RFC 45](0045-lib-memory.md).
+
 ## Summary
 [summary]: #summary
 
@@ -77,7 +80,7 @@ None.
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Once `Memory` is extended to support arbitrary shapes, it is natural that higher level constructs building on `Memory` like FIFOs gets the same treatment.  
+- Once `Memory` is extended to support arbitrary shapes, it is natural that higher level constructs building on `Memory` like FIFOs gets the same treatment.
 
 - `granularity` could later be allowed to be used with other kinds of shapes.
   - This is desirable for e.g. `lib.data.ArrayLayout`, but is not currently possible since `Memory` lives in `hdl.mem`, and `hdl` can't depend on `lib`.
