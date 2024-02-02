@@ -1,5 +1,5 @@
 - Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [amaranth-lang/rfcs#0000](https://github.com/amaranth-lang/rfcs/pull/0000)
+- RFC PR: [amaranth-lang/rfcs#27](https://github.com/amaranth-lang/rfcs/pull/27)
 - Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
 
 # Testbench processes for the simulator
@@ -63,13 +63,13 @@ The code example above is rewritten as:
 dut = DUT()
 def testbench():
     yield dut.out.eq(1)
-    yield
+    yield Tick()
     print((yield dut.out))
     print((yield dut.outn))
 
 sim = Simulator(dut)
 sim.add_clock(1e-6)
-sim.add_testbench(testbench, domain="sync")
+sim.add_testbench(testbench)
 sim.run()
 ```
 
@@ -80,28 +80,133 @@ When run, it prints:
 0
 ```
 
-Existing testbenches can be ported to use `Simulator.add_testbench` by removing extraneous `yield` or `yield Settle()` calls.
+Existing testbenches can be ported to use `Simulator.add_testbench` by removing extraneous `yield` or `yield Settle()` calls (and, in some cases, shifting other `yield` calls around).
 
 Reusable abstractions can be built by defining generator functions on interfaces or components.
+
+### Guidance on simulator modalities
+
+There are two main simulator modalities: `add_testbench` and `add_sync_process`. They have completely disjoint purposes:
+
+- `add_testbench` is used for testing logic (asynchronous or synchronous). It is not used for behavioral replacement of synchronous logic.
+- `add_sync_process` is used for behavioral replacement of synchronous logic. It is not for testing logic (except for legacy code), and a deprecation warning is shown when `yield Settle()` is executed in such a process.
+
+Example of using `add_testbench` to test combinatorial logic:
+
+```python
+m = Module()
+m.d.comb += a.eq(~b)
+
+def testbench():
+    yield b.eq(1)
+    print((yield a)) # => 0
+
+sim = Simulator(m)
+# No clock is required
+sim.add_testbench(testbench)
+sim.run()
+```
+
+Example of using `add_testbench` to test synchronous logic:
+
+```python
+m = Module()
+m.d.sync += a.eq(~b)
+
+def testbench():
+    yield b.eq(1)
+    yield Tick() # same as Tick("sync")
+    print((yield a)) # => 0
+
+sim = Simulator(m)
+sim.add_clock(1e-6)
+sim.add_testbench(testbench)
+sim.run()
+```
+
+Example of using `add_sync_process` to replace the flop above, and `add_testbench` to test the flop:
+
+```python
+m = Module()
+
+def flop():
+    while True:
+        yield b.eq(~(yield a))
+        yield Tick()
+
+def testbench():
+    yield b.eq(1)
+    yield Tick() # same as Tick("sync")
+    print((yield a)) # => 0
+
+sim = Simulator(m)
+sim.add_clock(1e-6)
+sim.add_sync_process(flop)
+sim.add_testbench(testbench)
+sim.run()
+```
+
+### Why not replace `add_sync_process` with `add_testbench` entirely?
+
+It is not possible to use `add_testbench` processes that drive signals in a race-free way. Consider this (behaviorally defined) circuit:
+
+```python
+x = Signal(reset=1)
+y = Signal()
+
+def proc_flop():
+    yield Tick()
+    yield y.eq(x)
+
+def proc2():
+    yield Tick()
+    xv = yield x
+    yv = yield y
+    print(f"proc2 x={xv} y={yv}")
+
+def proc3():
+    yield Tick()
+    yv = yield y
+    xv = yield x
+    print(f"proc3 x={xv} y={yv}")
+```
+
+If these processes are added using `add_testbench`, the output is:
+
+```
+proc3 x=1 y=0
+proc2 x=1 y=1
+```
+
+If they are added using `add_sync_process`, the output is:
+
+```
+proc2 x=1 y=0
+proc3 x=1 y=0
+```
+
+Clearly, if `proc2` and `proc3` are other flops in the circuit, perhaps performing a computation on `x` and `y`, they must be simulated using `add_sync_process`.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-A new `Simulator.add_testbench(process, *, domain=None)` is added. This function schedules `process` similarly to `add_process`, except that before returning control to the coroutine `process` it performs the equivalent of `yield Settle()`. If `domain` is not `None`, then calling `yield` within `add_testbench` performs the equivalent of `yield Tick(domain)`.
+A new `Simulator.add_testbench(process)` is added. This function schedules `process` similarly to `add_process`, except that before returning control to the coroutine `process` it performs the equivalent of `yield Settle()`.
 
-`Settle` is deprecated and removed in a future version.
+`add_process` and `Settle` are deprecated and removed in a future version.
+
+`yield Tick()` is deprecated within `add_sync_process` and the ability to use it as well as `yield Settle()` is removed in a future version.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
 
-Increase in API surface area and complexity. Churn.
+- Churn.
+- Testbench processes can race with each other, and it is not trivial to use multiple testbench processes in a design in a race-free way.
+    - Processes using `Settle` can race as well.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The motivating issue has no known alternative resolution besides introducing this (or a very similar) API. The status quo has proved deeply unsatisfactory over many years, and the `add_testbench` process has been trialed in 2020 and found usable.
-
-The `domain` argument of `add_testbench` could default to "sync", as for `add_sync_process`. Since a testbench does not inherently have a "default" domain (unlike a behavioral replacement for a register transfer level module, where `sync` is the default), this does not appear appropriate.
 
 ## Prior art
 [prior-art]: #prior-art
@@ -117,3 +222,9 @@ None.
 [future-possibilities]: #future-possibilities
 
 In the standard library, `fifo.read()` and `fifo.write()` functions could be defined that aid in testing designs with FIFOs. Such functions will only work correctly within testbench processes.
+
+As it is, every such helper function would have to take a `domain` argument, which can quickly get out of hand. We have `DomainRenamer` in the RTL sub-language and we may want to have something like that in the simulation sub-language. (@zyp)
+
+A new `add_comb_process` function could be added, to replace combinatorial logic. This function would have to accept a list of all signals driven by the process, so that combinatorial loops could be detected. (The demand for this has not been high; as of right now, this is not possible anyway.)
+
+The existing `add_sync_process` function could accept a list of all signals driven by the process. This could aid in error detection, especially as CXXRTL is integrated into the design, because if a simulator process is driving a signal at the same time as an RTL process, a silent race condition occurs.
