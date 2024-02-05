@@ -1,6 +1,6 @@
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2024-02-05
 - RFC PR: [amaranth-lang/rfcs#27](https://github.com/amaranth-lang/rfcs/pull/27)
-- Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
+- Amaranth Issue: [amaranth-lang/amaranth#1082](https://github.com/amaranth-lang/amaranth/issues/1082)
 
 # Testbench processes for the simulator
 
