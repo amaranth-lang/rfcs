@@ -598,7 +598,7 @@ The `csr.reg.Bridge` class describes a `wiring.Component` that mediates access b
 }
 ```
 
-- a `.elaborate(self, platform)` method, that instantiates a `csr.Multiplexer` submodule and connects its bus interface to `self.bus`. The registers of `self.register_map` are added as submodules.
+- a `.elaborate(self, platform)` method, that instantiates a `csr.Multiplexer` submodule and connects its bus interface to `self.bus`. The registers in `self.bus.memory_map` are added as submodules.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
