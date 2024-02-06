@@ -246,7 +246,7 @@ class UARTPeripheral(Elaboratable):
             self._rx_status.f.err.r_data.eq(rx_fifo.r_data[-1]),
 
             self._rx_data.f.data.r_data.eq(rx_fifo.r_data[:8]),
-            rx_fifo.r_en.eq(self._rx_data.f.data.port.r_stb),
+            rx_fifo.r_en.eq(self._rx_data.f.data.r_stb),
         ]
 
         ...
