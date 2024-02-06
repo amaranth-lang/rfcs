@@ -547,18 +547,13 @@ The `csr.reg.Builder` class can build a `MemoryMap` from a group of `csr.Registe
     * upon entry, creates a scope where registers added by `self.add()` are assigned to a cluster named `name`;
     * raises a `ValueError` if `self` is frozen;
     * raises a `TypeError` if `name` is not a non-empty string;
-    * raises a `TypeError` if `size` is not a positive integer;
-    * raises a `TypeError` if `offset` is neither a positive integer or 0;
-    * raises a `ValueError` if `offset` is not word-aligned (i.e. a multiple of `self.data_width // self.granularity`);
+    * raises a `ValueError` if `name` is already assigned to another register or `Cluster`;
 
 - a `.Index(self, index)` context manager method, which:
     * upon entry, creates a scope where registers added by `self.add()` are assigned to an array index `index`;
     * raises a `ValueError` if `self` is frozen;
     * raises a `TypeError` if `index` is neither a positive integer or 0;
     * raises a `ValueError` if `index` is already assigned to another `Index`;
-    * raises a `TypeError` if `size` is not a positive integer;
-    * raises a `TypeError` if `offset` is neither a positive integer or 0;
-    * raises a `ValueError` if `offset` is not word-aligned (i.e. a multiple of `self.data_width // self.granularity`);
 
 - a `.as_memory_map(self)` method, that converts `self` into a `MemoryMap`. `self.freeze()` is implicitly called as a side-effect.
 
