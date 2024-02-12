@@ -4,6 +4,11 @@
 
 # Testbench processes for the simulator
 
+> **Amendments**
+> This RFC was amended on 2024-02-12 to deprecate `add_sync_process` rather than `add_process`, for two reasons:
+> 1. `add_process` encompasses anything `add_sync_process` can do, but there is functionality that is quite difficult to do with `add_sync_process`, such as behavioral implementation of a DDR flop.
+> 2. `add_sync_process` relies on argument-less `yield`, which has no equivalent with `await ...` syntax that is desired in the future.
+
 ## Summary
 [summary]: #summary
 
@@ -86,10 +91,10 @@ Reusable abstractions can be built by defining generator functions on interfaces
 
 ### Guidance on simulator modalities
 
-There are two main simulator modalities: `add_testbench` and `add_sync_process`. They have completely disjoint purposes:
+There are two main simulator modalities: `add_testbench` and `add_process`. They have completely disjoint purposes:
 
 - `add_testbench` is used for testing logic (asynchronous or synchronous). It is not used for behavioral replacement of synchronous logic.
-- `add_sync_process` is used for behavioral replacement of synchronous logic. It is not for testing logic (except for legacy code), and a deprecation warning is shown when `yield Settle()` is executed in such a process.
+- `add_process` is used for behavioral replacement of synchronous logic. It is not for testing logic (except for legacy code), and a deprecation warning is shown when `yield Settle()` is executed in such a process.
 
 Example of using `add_testbench` to test combinatorial logic:
 
@@ -124,7 +129,7 @@ sim.add_testbench(testbench)
 sim.run()
 ```
 
-Example of using `add_sync_process` to replace the flop above, and `add_testbench` to test the flop:
+Example of using `add_process` to replace the flop above, and `add_testbench` to test the flop:
 
 ```python
 m = Module()
@@ -141,12 +146,12 @@ def testbench():
 
 sim = Simulator(m)
 sim.add_clock(1e-6)
-sim.add_sync_process(flop)
+sim.add_process(flop)
 sim.add_testbench(testbench)
 sim.run()
 ```
 
-### Why not replace `add_sync_process` with `add_testbench` entirely?
+### Why not replace `add_process` with `add_testbench` entirely?
 
 It is not possible to use `add_testbench` processes that drive signals in a race-free way. Consider this (behaviorally defined) circuit:
 
@@ -178,23 +183,21 @@ proc3 x=1 y=0
 proc2 x=1 y=1
 ```
 
-If they are added using `add_sync_process`, the output is:
+If they are added using `add_process`, the output is:
 
 ```
 proc2 x=1 y=0
 proc3 x=1 y=0
 ```
 
-Clearly, if `proc2` and `proc3` are other flops in the circuit, perhaps performing a computation on `x` and `y`, they must be simulated using `add_sync_process`.
+Clearly, if `proc2` and `proc3` are other flops in the circuit, perhaps performing a computation on `x` and `y`, they must be simulated using `add_process`.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 A new `Simulator.add_testbench(process)` is added. This function schedules `process` similarly to `add_process`, except that before returning control to the coroutine `process` it performs the equivalent of `yield Settle()`.
 
-`add_process` and `Settle` are deprecated and removed in a future version.
-
-`yield Tick()` is deprecated within `add_sync_process` and the ability to use it as well as `yield Settle()` is removed in a future version.
+`add_sync_process` and `Settle` are deprecated and removed in a future version.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -227,4 +230,4 @@ As it is, every such helper function would have to take a `domain` argument, whi
 
 A new `add_comb_process` function could be added, to replace combinatorial logic. This function would have to accept a list of all signals driven by the process, so that combinatorial loops could be detected. (The demand for this has not been high; as of right now, this is not possible anyway.)
 
-The existing `add_sync_process` function could accept a list of all signals driven by the process. This could aid in error detection, especially as CXXRTL is integrated into the design, because if a simulator process is driving a signal at the same time as an RTL process, a silent race condition occurs.
+The existing `add_process` function could accept a list of all signals driven by the process. This could aid in error detection, especially as CXXRTL is integrated into the design, because if a simulator process is driving a signal at the same time as an RTL process, a silent race condition occurs.
