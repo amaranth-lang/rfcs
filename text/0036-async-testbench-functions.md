@@ -18,7 +18,7 @@ A more expressive way to specify trigger/wait conditions allows the condition ch
 
 Passing a simulator context to the testbench function provides a convenient place to gather all simulator operations.
 
-Having `.get()` and `.set()` methods provides a convenient way for value castables to implement these in a type-specific manner.
+~~Having `.get()` and `.set()` methods provides a convenient way for value castables to implement these in a type-specific manner.~~
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -29,25 +29,27 @@ On the interface class, we can then implement `.send()` and `.recv()` methods li
 ```python
 class StreamInterface(PureInterface):
     async def recv(self, sim):
-        await self.ready.set(1)
+        await sim.set(self.ready, 1)
         await sim.tick().until(self.valid)
 
-        value = await self.data.get()
+        value = await sim.get(self.data)
 
         await sim.tick()
-        await self.ready.set(0)
+        await sim.set(self.ready, 0)
 
         return value
 
     async def send(self, sim, value):
-        await self.data.set(value)
+        await sim.set(self.data, value)
 
-        await self.valid.set(1)
+        await sim.set(self.valid, 1)
         await sim.tick().until(self.ready)
 
         await sim.tick()
-        await self.valid.set(0)
+        await sim.set(self.valid, 0)
 ```
+
+`await sim.get()` and `await sim.set()` replaces the existing operations `yield signal` and `yield signal.eq()` respectively.
 
 `sim.tick()` replaces the existing `Tick()`. It returns a trigger object that either can be awaited directly, or made conditional through `.until()`.
 
@@ -77,7 +79,7 @@ async def testbench(sim):
     await test_rgb(sim, 255, 255, 255)
 ```
 
-Since `.send()` and `.recv()` invokes `.get()` and `.set()` that a value castable (here `data.View`) can implement in a suitable manner, it is general enough to work for streams with arbitrary shapes.
+Since `.send()` and `.recv()` invokes `sim.get()` and `sim.set()` that in turn will invoke the appropriate value conversions for a value castable (here `data.View`), it is general enough to work for streams with arbitrary shapes.
 
 `Tick()` and `Delay()` are replaced by `sim.tick()` and `sim.delay()` respectively.
 In addition, `sim.changed()` is introduced that allows creating triggers from arbitrary signals.
@@ -108,13 +110,21 @@ The following `Simulator` methods have their signatures updated:
 
 The new optional named argument `passive` registers the testbench as passive when true.
 
-Both methods are updated to accept an async function passed as `process`. When the function passed to `process` accepts an argument named `sim`, it will be passed a simulator context.
+Both methods are updated to accept an async function passed as `process`.
+The async function must accept a named argument `sim`, which will be passed a simulator context.
 
 The simulator context have the following methods:
-- `delay(interval=None)`
+- `get(signal)`
+  - Returns the value of `signal` when awaited.
+    When `signal` is a value-castable, the value will be converted through `.from_bits()`. (Pending RFC #51)
+- `set(signal, value)`
+  - Set `signal` to `value` when awaited.
+    When `signal` is a value-castable, the value will be converted through `.const()`.
+- `delay(interval)`
   - Return a trigger object for advancing simulation by `interval` seconds.
-- `tick(domain="sync")`
+- `tick(domain="sync", *, context=None)`
   - Return a trigger object for advancing simulation by one tick of `domain`.
+    When an elaboratable is passed to `context`, `domain` will be resolved from its perspective.
 - `changed(signal, value=None)`
   - Return a trigger object for advancing simulation until `signal` is changed to `value`. `None` is a wildcard and will trigger on any change.
 - `active()`
@@ -124,24 +134,27 @@ The simulator context have the following methods:
 
 A trigger object has the following methods:
 - `until(condition)`
-  - Repeat the trigger until `condition` is true. If `condition` is initially true, `await` will return immediately without advancing simulation.
+  - Repeat the trigger until `condition` is true.
+    `condition` is an arbitrary Amaranth expression.
+    If `condition` is initially true, `await` will return immediately without advancing simulation.
 
-`Value`, `data.View` and `enum.EnumView` have `.get()` and `.set()` methods added.
+~~`Value`, `data.View` and `enum.EnumView` have `.get()` and `.set()` methods added.~~
 
 `Tick()`, `Delay()`, `Active()` and `Passive()` as well as the ability to pass generator coroutines as `process` are deprecated and removed in a future version.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
 
-Reserves two new names on `Value` and value castables. Increase in API surface area and complexity. Churn.
+-  ~~Reserves two new names on `Value` and value castables~~
+- Increase in API surface area and complexity.
+- Churn.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Do nothing. Keep the existing interface, add `Changed()` alongside `Delay()` and `Tick()`, use `yield from` when calling functions.
 
-- Don't introduce `.get()` and `.set()`. Instead require a value castable and the return value of its `.eq()` to be awaitable so `await value` and `await value.eq(foo)` is possible.
-
+- ~~Don't introduce `.get()` and `.set()`. Instead require a value castable and the return value of its `.eq()` to be awaitable so `await value` and `await value.eq(foo)` is possible.~~
 
 ## Prior art
 [prior-art]: #prior-art
@@ -156,9 +169,11 @@ Other python libraries like [cocotb](https://docs.cocotb.org/en/stable/coroutine
   Simulating sync logic with async reset could be another.
   What would be a good syntax to combine triggers?
 - Is there any other functionality that's natural to have on the simulator context?
+  - (@wanda-phi) `sim.memory_read(memory, address)`, `sim.memory_write(memory, address, value[, mask])`?
 - Is there any other functionality that's natural to have on the trigger object?
   - Maybe a way to skip a given number of triggers? We still lack a way to say «advance by n cycles».
 - Bikeshed all the names.
+  - (@whitequark) We should consider different naming for `active`/`passive`.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
