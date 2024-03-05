@@ -76,13 +76,33 @@ Each `Mode.pin_x` field can hold the following values:
 ```python3
 class Mode(enum.Enum, shape=unsigned(2)):
     INPUT_ONLY = 0b00
-    PUSH_PULL  = 0b10
-    OPEN_DRAIN = 0b01
+    PUSH_PULL  = 0b01
+    OPEN_DRAIN = 0b10
+    ALTERNATE  = 0b11
 ```
 
-- If `Mode.pin_x` is `INPUT_ONLY`, then `pins[x].oe = 0`.
-- If `Mode.pin_x` is `PUSH_PULL`, then `pins[x].oe = 1` and `pins[x].o = Output.pin_x`.
-- If `Mode.pin_x` is `OPEN_DRAIN`, then `pins[x].oe = ~Output.pin_x` and `pins[x].o = 0`.
+Each `Mode.pin_x` field resets to `INPUT_ONLY`.
+
+If `Mode.pin_x` is `INPUT_ONLY`:
+- `pins[x].alt_mode` returns 0.
+- `Input.pin_x` returns the last value of `pins[x].i` sampled on a clock cycle.
+- `pins[x].oe` returns 0 `pins[x].o` return 0.
+
+If `Mode.pin_x` is `PUSH_PULL`:
+- `pins[x].alt_mode` returns 0.
+- `Input.pin_x` returns the last value of `pins[x].i` sampled on a clock cycle.
+- `pins[x].oe` returns 1 and `pins[x].o` returns `Output.pin_x`.
+
+If `Mode.pin_x` is `OPEN_DRAIN`:
+- `pins[x].alt_mode` returns 0.
+- `Input.pin_x` returns the last value of `pins[x].i` sampled on a clock cycle.
+- `pins[x].oe` returns `~Output.pin_x` and `pins[x].o` returns 0.
+
+If `Mode.pin_x` is `ALTERNATE`:
+- `pins[x].alt_mode` returns 1.
+- `Input.pin_x`, `pins[x].oe` and `pins[x].o` return implementation-specific values.
+
+If `ALTERNATE` mode is unimplemented, its behavior should be equivalent to `INPUT_ONLY` mode.
 
 #### Input (read-only)
 
@@ -92,10 +112,7 @@ class Mode(enum.Enum, shape=unsigned(2)):
          {name: 'pin_1', bits: 1, attr: 'R'},
          {name: 'pin_2', bits: 1, attr: 'R'},
          {name: 'pin_3', bits: 1, attr: 'R'},
-         {bits: 4, attr: 'ResR0W0'},
-     ], {bits: 8})">
-
-Each `Input.pin_x` field holds the last value of `pins[x].i` sampled on a clock cycle.
+     ], {bits: 4})">
 
 #### Output (read/write)
 
@@ -105,26 +122,23 @@ Each `Input.pin_x` field holds the last value of `pins[x].i` sampled on a clock 
          {name: 'pin_1', bits: 1, attr: 'RW'},
          {name: 'pin_2', bits: 1, attr: 'RW'},
          {name: 'pin_3', bits: 1, attr: 'RW'},
-         {bits: 4, attr: 'ResR0W0'},
-     ], {bits: 8})">
+     ], {bits: 4})">
 
-Each `Output.pin_x` field holds the next value of `pins[x].o` in `PUSH_PULL` mode.
+Each `Output.pin_x` field resets to 0.
 
 #### SetClr (write-only)
 
 <img src="./0049-soc-gpio-peripheral/reg-setclr.svg"
      alt="bf([
          {name: 'set_0', bits: 1, attr: 'W'},
-         {name: 'set_1', bits: 1, attr: 'W'},
-         {name: 'set_2', bits: 1, attr: 'W'},
-         {name: 'set_3', bits: 1, attr: 'W'},
-         {bits: 4, attr: 'ResR0W0'},
          {name: 'clr_0', bits: 1, attr: 'W'},
+         {name: 'set_1', bits: 1, attr: 'W'},
          {name: 'clr_1', bits: 1, attr: 'W'},
+         {name: 'set_2', bits: 1, attr: 'W'},
          {name: 'clr_2', bits: 1, attr: 'W'},
+         {name: 'set_3', bits: 1, attr: 'W'},
          {name: 'clr_3', bits: 1, attr: 'W'},
-         {bits: 4, attr: 'ResR0W0'},
-     ], {bits: 8, lanes: 2})">
+     ], {bits: 8})">
 
 - Writing `1` to an `SetClr.set_x` field sets `Output.pin_x`.
 - Writing `1` to an `SetClr.clr_x` field clears `Output.pin_x`.
@@ -140,8 +154,9 @@ The members of a `gpio.PinSignature` are defined as follows:
 
 ```python3
 {
-    "i":  In(unsigned(1)),
-    "o":  Out(unsigned(1)),
+    "alt_mode": Out(unsigned(1)),
+    "i": In(unsigned(1)),
+    "o": Out(unsigned(1)),
     "oe": Out(unsigned(1)),
 }
 ```
@@ -151,7 +166,7 @@ The members of a `gpio.PinSignature` are defined as follows:
 The `gpio.Peripheral` class is a `wiring.Component` implementing a GPIO controller, with:
 - a `.__init__(self, *, pin_count, addr_width, data_width, name=None, input_stages=2)` constructor, where:
   * `pin_count` is a non-negative integer.
-  * `input_stages` is `0`, `1` or `2`.
+  * `input_stages` is a non-negative integer.
   * `addr_width`, `data_width` and `name` are passed to a `csr.Builder`
 - a `.signature` property, that returns a `wiring.Signature` with the following members:
 
@@ -188,7 +203,11 @@ While they can be found in most microcontollers, the design of GPIOs in STM32 ha
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- ~~Should we support synchronizing a pin input on falling edges of the clock ?~~ Users can synchronize pin inputs on falling edges by instantiating a `gpio.Peripheral` with `input_stages=0`, and providing their own synchronization mechanism.
+- ~~Should we support synchronizing a pin input on falling edges of the clock ?~~ (@whitequark) Users can synchronize pin inputs on falling edges by instantiating a `gpio.Peripheral` with `input_stages=0`, and providing their own synchronization mechanism.
+
+- What is our policy for backward-compatible extensions of the peripheral ? (@whitequark) If or when we add registers for new optional features, such as pull-ups, switchable schmitt triggers, switchable output driver strengths, etc, each register will always reside at the same fixed (for a given pin count) address regardless of which features are enabled, and each of these registers will be all-0s after reset, where such all-0s value will provide behavior identical to the behavior of the peripheral without the optional feature. Slots in the address space will never be reallocated with a different meaning once allocated upstream in Amaranth SoC.
+    * This will be important to industry users caring about forward and cross-family/cross-configuration compatibility.
+    * In a perfect world this would be our policy for every peripheral. Realistically, we'll only be able to provide this strongest guarantee for only a subset of peripherals.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
