@@ -39,6 +39,7 @@ class MySoC(wiring.Component):
         # Use a GPIO peripheral to control four LEDs:
 
         m.submodules.led_gpio = led_gpio = gpio.Peripheral(pin_count=4, addr_width=8, data_width=8)
+
         for n in range(4):
             connect(m, led_gpio.pins[n], platform.request("led", n, dir="io"))
 
@@ -84,25 +85,30 @@ class Mode(enum.Enum, shape=unsigned(2)):
 Each `Mode.pin_x` field resets to `INPUT_ONLY`.
 
 If `Mode.pin_x` is `INPUT_ONLY`:
-- `pins[x].alt_mode` returns 0.
-- `Input.pin_x` returns the last value of `pins[x].i` sampled on a clock cycle.
-- `pins[x].oe` returns 0 `pins[x].o` return 0.
+- `pins[x].oe` is 0.
+- `pins[x].o` is connected to `Output.pin_x`.
+- `Input.pin_x` is connected to `pins[x].i`.
+- `alt_mode[x]` is 0.
 
 If `Mode.pin_x` is `PUSH_PULL`:
-- `pins[x].alt_mode` returns 0.
-- `Input.pin_x` returns the last value of `pins[x].i` sampled on a clock cycle.
-- `pins[x].oe` returns 1 and `pins[x].o` returns `Output.pin_x`.
+- `pins[x].oe` is 1.
+- `pins[x].o` is `Output.pin_x`.
+- `Input.pin_x` is connected to `pins[x].i`.
+- `alt_mode[x]` is 0.
 
 If `Mode.pin_x` is `OPEN_DRAIN`:
-- `pins[x].alt_mode` returns 0.
-- `Input.pin_x` returns the last value of `pins[x].i` sampled on a clock cycle.
-- `pins[x].oe` returns `~Output.pin_x` and `pins[x].o` returns 0.
+- `pins[x].oe` is connected to `~Output.pin_x`.
+- `pins[x].o` is 0.
+- `Input.pin_x` is connected to `pins[x].i`.
+- `alt_mode[x]` is 0.
 
 If `Mode.pin_x` is `ALTERNATE`:
-- `pins[x].alt_mode` returns 1.
-- `Input.pin_x`, `pins[x].oe` and `pins[x].o` return implementation-specific values.
+- `pins[x].oe` is 0.
+- `pins[x].o` is connected to `Output.pin_x`.
+- `Input.pin_x` is connected to `pins[x].i`.
+- `alt_mode[x]` is 1.
 
-If `ALTERNATE` mode is unimplemented, its behavior should be equivalent to `INPUT_ONLY` mode.
+When `alt_mode[x]` is 1, a component connected to the GPIO peripheral (such as a pin multiplexer) may assign implementation-specific functions to `Input.pin_x` and `Output.pin_x`.
 
 #### Input (read-only)
 
@@ -113,6 +119,8 @@ If `ALTERNATE` mode is unimplemented, its behavior should be equivalent to `INPU
          {name: 'pin_2', bits: 1, attr: 'R'},
          {name: 'pin_3', bits: 1, attr: 'R'},
      ], {bits: 4})">
+
+The number of synchronization stages between `pins[x].i` and `Input.pin_x` is defined by the `input_stages` parameter, which defaults to 2. Synchronization is done on rising edges of `ClockSignal("sync")`.
 
 #### Output (read/write)
 
@@ -130,18 +138,15 @@ Each `Output.pin_x` field resets to 0.
 
 <img src="./0049-soc-gpio-peripheral/reg-setclr.svg"
      alt="bf([
-         {name: 'set_0', bits: 1, attr: 'W'},
-         {name: 'clr_0', bits: 1, attr: 'W'},
-         {name: 'set_1', bits: 1, attr: 'W'},
-         {name: 'clr_1', bits: 1, attr: 'W'},
-         {name: 'set_2', bits: 1, attr: 'W'},
-         {name: 'clr_2', bits: 1, attr: 'W'},
-         {name: 'set_3', bits: 1, attr: 'W'},
-         {name: 'clr_3', bits: 1, attr: 'W'},
+         {name: 'pin_0', bits: 2, attr: 'W'},
+         {name: 'pin_1', bits: 2, attr: 'W'},
+         {name: 'pin_2', bits: 2, attr: 'W'},
+         {name: 'pin_3', bits: 2, attr: 'W'},
      ], {bits: 8})">
 
-- Writing `1` to an `SetClr.set_x` field sets `Output.pin_x`.
-- Writing `1` to an `SetClr.clr_x` field clears `Output.pin_x`.
+- Writing `0b01` to `SetClr.pin_x` sets `Output.pin_x`.
+- Writing `0b10` to `SetClr.pin_x` clears `Output.pin_x`.
+- Writing `0b00` or `0b11` to `SetClr.pin_x` has no effect.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -154,7 +159,6 @@ The members of a `gpio.PinSignature` are defined as follows:
 
 ```python3
 {
-    "alt_mode": Out(unsigned(1)),
     "i": In(unsigned(1)),
     "o": Out(unsigned(1)),
     "oe": Out(unsigned(1)),
@@ -174,6 +178,7 @@ The `gpio.Peripheral` class is a `wiring.Component` implementing a GPIO controll
 {
     "bus": In(csr.Signature(addr_width, data_width)),
     "pins": Out(gpio.PinSignature()).array(pin_count),
+    "alt_mode": Out(unsigned(pin_count)),
 }
 ```
 
