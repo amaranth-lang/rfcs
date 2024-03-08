@@ -18,8 +18,6 @@ A more expressive way to specify trigger/wait conditions allows the condition ch
 
 Passing a simulator context to the testbench function provides a convenient place to gather all simulator operations.
 
-~~Having `.get()` and `.set()` methods provides a convenient way for value castables to implement these in a type-specific manner.~~
-
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -53,6 +51,10 @@ class StreamInterface(PureInterface):
 
 `sim.tick()` replaces the existing `Tick()`. It returns a trigger object that either can be awaited directly, or made conditional through `.until()`.
 
+> **Note**
+> This simplified example does not include any way of specifying the clock domain of the interface and as such is only directly applicable to single domain simulations.
+> A way to attach clock domain information to interfaces is desireable, but out of scope for this RFC.
+
 Using this stream interface, let's consider a colorspace converter accepting a stream of RGB values and outputting a stream of YUV values:
 
 ```python
@@ -82,11 +84,12 @@ async def testbench(sim):
 Since `.send()` and `.recv()` invokes `sim.get()` and `sim.set()` that in turn will invoke the appropriate value conversions for a value castable (here `data.View`), it is general enough to work for streams with arbitrary shapes.
 
 `Tick()` and `Delay()` are replaced by `sim.tick()` and `sim.delay()` respectively.
-In addition, `sim.changed()` is introduced that allows creating triggers from arbitrary signals.
+In addition, `sim.changed()` and `sim.edge()` is introduced that allows creating triggers from arbitrary signals.
 These all return a trigger object that can be made conditional through `.until()`.
 
-`Active()` and `Passive()` are replaced by an `passive=False` keyword argument to `.add_process()` and `.add_testbench()`.
-To mark a passive testbench temporarily active, `sim.active()` is introduced, which is used as a context manager:
+`Active()` and `Passive()` are replaced by an `background=False` keyword argument to `.add_testbench()`.
+Processes created through `.add_process()` are always created as background processes.
+To allow a background process to ensure an operation is finished before end of simulation, `sim.critical()` is introduced, which is used as a context manager:
 
 ```python
 async def packet_reader(sim, stream):
@@ -94,10 +97,46 @@ async def packet_reader(sim, stream):
         # Wait until stream has valid data.
         await sim.tick().until(stream.valid)
 
-        # Go active to ensure simulation doesn't end in the middle of a packet.
-        async with sim.active():
+        # Ensure simulation doesn't end in the middle of a packet.
+        async with sim.critical():
             packet = await stream.read_packet()
             print('Received packet:', packet.hex(' '))
+```
+
+When a trigger object is awaited, it'll return the value(s) of the trigger(s), and it can also be used as an async generator to repeatedly await the same trigger.
+Multiple triggers can be combined.
+Consider the following examples:
+
+Combinational adder as a process:
+```python
+a = Signal(); b = Signal(); o = Signal()
+async def adder(sim):
+    async for a_val, b_val in sim.changed(a, b):
+        await sim.set(o, a_val + b_val)
+sim.add_process(adder)
+```
+
+DDR IO buffer as a process:
+```python
+o = Signal(2); pin = Signal()
+async def ddr_buffer(sim):
+    while True: # could be extended to pre-capture next `o` on posedge
+        await sim.negedge()
+        await sim.set(pin, o[0])
+        await sim.posedge()
+        await sim.set(pin, o[1])
+sim.add_process(ddr_buffer)
+```
+
+Flop with configurable edge reset and posedge clock as a process:
+```python
+clk = Signal(); rst = Signal(); d = Signal(); q = Signal()
+def dff(rst_edge):
+    async def process(sim):
+        async for clk_val, rst_val in sim.posedge(clk).edge(rst, rst_edge):
+            await sim.set(q, 0 if rst_val == rst_edge else await sim.get(d))
+    return process
+sim.add_process(dff(rst_edge=0))
 ```
 
 ## Reference-level explanation
@@ -105,47 +144,71 @@ async def packet_reader(sim, stream):
 
 The following `Simulator` methods have their signatures updated:
 
-* `add_process(process, *, passive=False)`
-* `add_testbench(process, *, passive=False)`
+* `add_process(process)`
+* `add_testbench(process, *, background=False)`
 
-The new optional named argument `passive` registers the testbench as passive when true.
+The new optional named argument `background` registers the testbench as a background process when true.
 
 Both methods are updated to accept an async function passed as `process`.
-The async function must accept a named argument `sim`, which will be passed a simulator context.
+The async function must accept an argument `sim`, which will be passed a simulator context.
+(Argument name is just convention, will be passed positionally.)
 
 The simulator context have the following methods:
-- `get(signal)`
-  - Returns the value of `signal` when awaited.
-    When `signal` is a value-castable, the value will be converted through `.from_bits()`. (Pending RFC #51)
-- `set(signal, value)`
-  - Set `signal` to `value` when awaited.
-    When `signal` is a value-castable, the value will be converted through `.const()`.
+- `get(expr: Value) -> int`
+- `get(expr: ValueCastable) -> any`
+  - Returns the value of `expr` when awaited.
+    When `expr` is a value-castable, the value will be converted through `.from_bits()`.
+- `set(expr: Value, value: ConstLike)`
+- `set(expr: ValueCastable, value: any)`
+  - Set `expr` to `value` when awaited.
+    When `expr` is a value-castable, the value will be converted through `.const()`.
+- `memory_read(instance: MemoryInstance, address)`
+  - Read the value from `address` in `instance` when awaited.
+- `memory_write(instance: MemoryInstance, address, value, mask=None)`
+  - Write `value` to `address` in `instance` when awaited. If `mask` is given, only the corresponding bits are written.
 - `delay(interval)`
-  - Return a trigger object for advancing simulation by `interval` seconds.
+  - Create a trigger object for advancing simulation by `interval` seconds.
 - `tick(domain="sync", *, context=None)`
-  - Return a trigger object for advancing simulation by one tick of `domain`.
+  - Create a trigger object for advancing simulation by one tick of `domain`.
     When an elaboratable is passed to `context`, `domain` will be resolved from its perspective.
-- `changed(signal, value=None)`
-  - Return a trigger object for advancing simulation until `signal` is changed to `value`. `None` is a wildcard and will trigger on any change.
-- `active()`
-  - Return a context manager that temporarily marks the testbench as active for the duration.
-- `time()`
-  - Return the current simulation time.
+  - If `domain` is asynchronously reset while this is being awaited, `AsyncReset` is raised.
+- `changed(*signals)`
+  - Create a trigger object for advancing simulation until any signal in `signals` changes.
+- `edge(signal, value)`
+  - Create a trigger object for advancing simulation until `signal` is changed to `value`.
+    `signal` must be a 1-bit signal or a 1-bit slice of a signal.
+- `posedge(signal)`
+- `negedge(signal)`
+  - Aliases for `edge(signal, 1)` and `edge(signal, 0)` respectively.
+  
+  `signal` is changed to `value`. `None` is a wildcard and will trigger on any change.
+- `critical()`
+  - Return a context manager that ensures simulation won't terminate in the middle of the enclosed scope.
 
 A trigger object has the following methods:
+- `__await__()`
+  - Advance simulation and return the value(s) of the trigger(s).
+    - `delay` and `tick` triggers return `True` when they are hit, otherwise `False`.
+    - `changed` and `edge` triggers return the current value of the signals they are monitoring.
+- `__aiter__()`
+  - Return an async generator that repeatedly invokes `__await__()` and yields the returned values.
+- `delay(interval)`
+- `tick(domain="sync", *, context=None)`
+- `changed(*signals)`
+- `edge(signal, value)`
+- `posedge(signal)`
+- `negedge(signal)`
+  - Create a new trigger object by copying the current object and appending another trigger.
 - `until(condition)`
   - Repeat the trigger until `condition` is true.
     `condition` is an arbitrary Amaranth expression.
     If `condition` is initially true, `await` will return immediately without advancing simulation.
-
-~~`Value`, `data.View` and `enum.EnumView` have `.get()` and `.set()` methods added.~~
 
 `Tick()`, `Delay()`, `Active()` and `Passive()` as well as the ability to pass generator coroutines as `process` are deprecated and removed in a future version.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
 
--  ~~Reserves two new names on `Value` and value castables~~
 - Increase in API surface area and complexity.
 - Churn.
 
@@ -153,8 +216,6 @@ A trigger object has the following methods:
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Do nothing. Keep the existing interface, add `Changed()` alongside `Delay()` and `Tick()`, use `yield from` when calling functions.
-
-- ~~Don't introduce `.get()` and `.set()`. Instead require a value castable and the return value of its `.eq()` to be awaitable so `await value` and `await value.eq(foo)` is possible.~~
 
 ## Prior art
 [prior-art]: #prior-art
@@ -164,18 +225,11 @@ Other python libraries like [cocotb](https://docs.cocotb.org/en/stable/coroutine
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- It should be possible to combine triggers, e.g. when we have a set of signals and are waiting for either of them to change.
-  Simulating combinational logic with `add_process` would be one use case for this.
-  Simulating sync logic with async reset could be another.
-  What would be a good syntax to combine triggers?
-- Is there any other functionality that's natural to have on the simulator context?
-  - (@wanda-phi) `sim.memory_read(memory, address)`, `sim.memory_write(memory, address, value[, mask])`?
-- Is there any other functionality that's natural to have on the trigger object?
-  - Maybe a way to skip a given number of triggers? We still lack a way to say «advance by n cycles».
 - Bikeshed all the names.
-  - (@whitequark) We should consider different naming for `active`/`passive`.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
-Add simulation helpers in the manner of `.send()` and `.recv()` to standard interfaces where it makes sense.
+- Add simulation helpers in the manner of `.send()` and `.recv()` to standard interfaces where it makes sense.
+- There is a desire for a `sim.time()` method that returns the current simulation time, but it needs a suitable return type to represent seconds with femtosecond resolution and that is out of the scope for this RFC.
+- We ought to have a way to skip a given number of triggers, so that we can tell the simulation engine to e.g. «advance by n cycles».
