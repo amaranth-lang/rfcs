@@ -1,6 +1,6 @@
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [amaranth-lang/rfcs#0000](https://github.com/amaranth-lang/rfcs/pull/0000)
-- Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
+- Start Date: 2024-03-08
+- RFC PR: [amaranth-lang/rfcs#49](https://github.com/amaranth-lang/rfcs/pull/49)
+- Amaranth Issue: [amaranth-lang/amaranth-soc#77](https://github.com/amaranth-lang/amaranth-soc/issues/77)
 
 # GPIO peripheral RFC
 
@@ -92,7 +92,7 @@ If `Mode.pin_x` is `INPUT_ONLY`:
 
 If `Mode.pin_x` is `PUSH_PULL`:
 - `pins[x].oe` is 1.
-- `pins[x].o` is `Output.pin_x`.
+- `pins[x].o` is conencted to `Output.pin_x`.
 - `Input.pin_x` is connected to `pins[x].i`.
 - `alt_mode[x]` is 0.
 
@@ -219,3 +219,7 @@ While they can be found in most microcontollers, the design of GPIOs in STM32 ha
 
 - Implement a pin multiplexer peripheral, that can be composed with this one to allow reusing other pins of a SoC as GPIOs.
 - Add support for interrupts.
+
+## Acknowledgements
+
+@whitequark and @tpwrules provided valuable feedback while this RFC was being drafted.
