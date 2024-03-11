@@ -93,7 +93,7 @@ To allow a background process to ensure an operation is finished before end of s
 
 ```python
 async def packet_reader(sim, stream):
-    while True
+    while True:
         # Wait until stream has valid data.
         await sim.tick().until(stream.valid)
 
@@ -133,8 +133,8 @@ Flop with configurable edge reset and posedge clock as a process:
 clk = Signal(); rst = Signal(); d = Signal(); q = Signal()
 def dff(rst_edge):
     async def process(sim):
-        async for clk_val, rst_val in sim.posedge(clk).edge(rst, rst_edge):
-            await sim.set(q, 0 if rst_val == rst_edge else await sim.get(d))
+        async for clk_hit, rst_hit in sim.posedge(clk).edge(rst, rst_edge):
+            await sim.set(q, 0 if rst_hit else await sim.get(d))
     return process
 sim.add_process(dff(rst_edge=0))
 ```
@@ -162,16 +162,16 @@ The simulator context have the following methods:
 - `set(expr: ValueCastable, value: any)`
   - Set `expr` to `value` when awaited.
     When `expr` is a value-castable, the value will be converted through `.const()`.
-- `memory_read(instance: MemoryInstance, address)`
+- `memory_read(instance: MemoryInstance, address: int)`
   - Read the value from `address` in `instance` when awaited.
-- `memory_write(instance: MemoryInstance, address, value, mask=None)`
+- `memory_write(instance: MemoryInstance, address: int, value: int, mask:int = None)`
   - Write `value` to `address` in `instance` when awaited. If `mask` is given, only the corresponding bits are written.
-- `delay(interval)`
+- `delay(interval: float)`
   - Create a trigger object for advancing simulation by `interval` seconds.
 - `tick(domain="sync", *, context=None)`
-  - Create a trigger object for advancing simulation by one tick of `domain`.
+  - Create a trigger object for advancing simulation until the next active edge of the `domain` clock.
     When an elaboratable is passed to `context`, `domain` will be resolved from its perspective.
-  - If `domain` is asynchronously reset while this is being awaited, `AsyncReset` is raised.
+  - If `domain` is asynchronously reset while this is being awaited, `amaranth.sim.AsyncReset` is raised.
 - `changed(*signals)`
   - Create a trigger object for advancing simulation until any signal in `signals` changes.
 - `edge(signal, value)`
@@ -180,19 +180,18 @@ The simulator context have the following methods:
 - `posedge(signal)`
 - `negedge(signal)`
   - Aliases for `edge(signal, 1)` and `edge(signal, 0)` respectively.
-  
-  `signal` is changed to `value`. `None` is a wildcard and will trigger on any change.
 - `critical()`
-  - Return a context manager that ensures simulation won't terminate in the middle of the enclosed scope.
+  - Context manager.
+    If the current process is a background process, `async with sim.critical():` makes it a non-background process for the duration of the statement.
 
 A trigger object has the following methods:
 - `__await__()`
   - Advance simulation and return the value(s) of the trigger(s).
-    - `delay` and `tick` triggers return `True` when they are hit, otherwise `False`.
-    - `changed` and `edge` triggers return the current value of the signals they are monitoring.
+    - `delay`, `tick` and `edge` triggers return `True` when they are hit, otherwise `False`.
+    - `changed` triggers return the current value of the signals they are monitoring.
 - `__aiter__()`
-  - Return an async generator that repeatedly invokes `__await__()` and yields the returned values.
-- `delay(interval)`
+  - Return an async generator that is equivalent to repeatedly awaiting the trigger object in an infinite loop.
+- `delay(interval: float)`
 - `tick(domain="sync", *, context=None)`
 - `changed(*signals)`
 - `edge(signal, value)`
@@ -203,6 +202,7 @@ A trigger object has the following methods:
   - Repeat the trigger until `condition` is true.
     `condition` is an arbitrary Amaranth expression.
     If `condition` is initially true, `await` will return immediately without advancing simulation.
+    The return value is an unspecified awaitable with `await` as the only defined operation.
 
 `Tick()`, `Delay()`, `Active()` and `Passive()` as well as the ability to pass generator coroutines as `process` are deprecated and removed in a future version.
 
@@ -226,6 +226,7 @@ Other python libraries like [cocotb](https://docs.cocotb.org/en/stable/coroutine
 [unresolved-questions]: #unresolved-questions
 
 - Bikeshed all the names.
+  - (@whitequark) Should we go for `posedge` (Verilog convention) or `pos_edge` (Python convention)?
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
