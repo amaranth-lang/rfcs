@@ -25,6 +25,7 @@ As an example, let's consider a simple stream interface with `valid`, `ready` an
 We can then implement `stream_send()` and `stream_recv()` functions like this:
 
 ```python
+@testbench_helper
 async def stream_recv(sim, stream):
     await sim.set(stream.ready, 1)
     await sim.tick().until(stream.valid)
@@ -36,6 +37,7 @@ async def stream_recv(sim, stream):
 
     return value
 
+@testbench_helper
 async def stream_send(sim, stream, value):
     await sim.set(stream.data, value)
 
@@ -49,6 +51,8 @@ async def stream_send(sim, stream, value):
 `await sim.get()` and `await sim.set()` replaces the existing operations `yield signal` and `yield signal.eq()` respectively.
 
 `sim.tick()` replaces the existing `Tick()`. It returns a trigger object that either can be awaited directly, or made conditional through `.until()`.
+
+The `testbench_helper` decorator indicates that this function is only designed to be called from testbench processes and will raise an exception if called elsewhere.
 
 > **Note**
 > This simplified example does not include any way of specifying the clock domain of the interface and as such is only directly applicable to single domain simulations.
@@ -156,10 +160,7 @@ The async function must accept an argument `sim`, which will be passed a simulat
 The new optional named argument `background` registers the testbench as a background process when true.
 Processes created through `add_process` are always registered as background processes (except when registering legacy non-async generator functions).
 
-The simulator context has the following properties and methods:
-- `process_type`
-  - Property, `ProcessType`, indicates the type of the current process.
-    This property allows a generic simulation helper function to assert that it's being run under the appropriate process type.
+The simulator context has the following methods:
 - `get(expr: Value) -> int`
 - `get(expr: ValueCastable) -> any`
   - Returns the value of `expr` when awaited.
@@ -184,10 +185,10 @@ The simulator context has the following properties and methods:
   - Create a combinable trigger object for advancing simulation by `interval` seconds.
 - `changed(*signals)`
   - Create a combinable trigger object for advancing simulation until any signal in `signals` changes.
-- `edge(signal, value)`
+- `edge(signal, value: int)`
   - Create a combinable trigger object for advancing simulation until `signal` is changed to `value`.
     `signal` must be a 1-bit signal or a 1-bit slice of a signal.
-    `value` is a boolean where true indicates rising edge and false indicates falling edge.
+    Valid values for `value` are `1` for rising edge and `0` for falling edge.
 - `posedge(signal)`
 - `negedge(signal)`
   - Aliases for `edge(signal, 1)` and `edge(signal, 0)` respectively.
@@ -195,13 +196,7 @@ The simulator context has the following properties and methods:
   - Context manager.
     If the current process is a background process, `async with sim.critical():` makes it a non-background process for the duration of the statement.
 
-The `ProcessType` enum has the following members:
-  - `BikeshedProcess`
-    - The current process is a process added by `add_process`.
-  - `BikeshedTestbench`
-    - The current process is a testbench process added by `add_testbench`.
-
-A domain trigger object has the following methods:
+A domain trigger object is immutable and has the following methods:
 - `__await__()`
   - Advance simulation. No value is returned.
 - `until(condition)`
@@ -209,11 +204,26 @@ A domain trigger object has the following methods:
     `condition` is an arbitrary Amaranth expression.
     If `condition` is initially true, `await` will return immediately without advancing simulation.
     The return value is an unspecified awaitable with `await` as the only defined operation.
+    It is only awaitable once and awaiting it returns no value.
+  - Example implementation:
+    ```python
+    async def until(self, condition):
+      while not await self._sim.get(condition):
+        await self
+    ```
 - `repeat(times: int)`
   - Repeat the trigger `times` times.
+    Valid values are `times >= 0`.
     The return value is an unspecified awaitable with `await` as the only defined operation.
+    It is only awaitable once and awaiting it returns no value.
+  - Example implementation:
+    ```python
+    async def repeat(self, times):
+      for _ in range(times):
+        await self
+    ```
 
-A combinable trigger object has the following methods:
+A combinable trigger object is immutable and has the following methods:
 - `__await__()`
   - Advance simulation and return the value(s) of the trigger(s).
     - `delay` and `edge` triggers return `True` when they are hit, otherwise `False`.
@@ -229,6 +239,10 @@ A combinable trigger object has the following methods:
 - `negedge(signal)`
   - Create a new trigger object by copying the current object and appending another trigger.
   - Awaiting the returned trigger object pauses the process until the first of the combined triggers hit, i.e. the triggers are combined using OR semantics.
+
+To ensure testbench helper functions are only called from a testbench process, the `amaranth.sim.testbench_helper` decorator is added.
+The function wrapper expects the first positional argument (or second, after `self` or `cls` if decorating a method/classmethod) to be a simulator context, and will raise `TypeError` if not.
+If the function is called outside a testbench process, an exception will be raised.
 
 `Tick()`, `Delay()`, `Active()` and `Passive()` as well as the ability to pass generator coroutines as `process` are deprecated and removed in a future version.
 
