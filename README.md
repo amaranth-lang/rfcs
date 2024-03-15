@@ -94,6 +94,20 @@ While the RFC pull request is up, the subsystem maintainers may schedule meeting
 
 The subsystem maintainer makes final decisions about RFCs after the benefits and drawbacks are well understood. These decisions can be made at any time, but the subsystem maintainer will regularly issue decisions. When a decision is made, the RFC pull request will either be merged or closed. In either case, if the reasoning is not clear from the discussion in thread, the subsystem maintainer will add a comment describing the rationale for the decision.
 
+## Merging an RFC
+[Merging an RFC]: #merging-an-rfc
+
+Once the decision is made to merge an RFC, the text must be prepared first. To do this:
+
+- Update the RFC text to reflect any changes that had to be made to achieve consensus.
+- Ensure that the "Unresolved questions" section does not have any unanswered questions.
+- Create a tracking issue in the relevant repository.
+- Fill in the RFC header fields (start date, RFC PR, tracking issue).
+- Rename the RFC filename to include the number of the RFC PR instead of `0000`.
+  - This step can be done either as a part of the merge commit in the next step, or by the RFC author right after submitting the PR.
+- Merge the RFC PR with the commit message "RFC #NNNN: Title of the RFC".
+  - This step can only be done by someone with the write access to the RFC repository.
+
 ## Implementing an RFC
 [Implementing an RFC]: #implementing-an-rfc
 
