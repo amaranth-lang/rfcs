@@ -8,13 +8,19 @@ Many changes, including bug fixes and documentation improvements can be implemen
 Some changes though are "substantial", and we ask that these be put through a bit of a design process and produce a consensus among the Amaranth community.
 
 The responsibility for evolving an Amaranth "subsystem" (a clearly defined part of the Amaranth project) lies on a subsystem maintainer. The assignment of maintainers to subsystems is:
-- **Core**: Catherine @whitequark
+- **Core**: Catherine [@whitequark][]
   - The "core" subsystem includes the HDL frontend, backend, and simulator, as well as the build and platform systems.
   - This covers the [amaranth-lang/amaranth][] repository and the `amaranth` Python package.
-- **SoC**: Jean-François @jfng
+- **SoC**: Jean-François [@jfng][]
   - The "SoC" subsystem includes the SoC infrastructure.
   - This covers the [amaranth-lang/amaranth-soc][] repository and the `amaranth_soc` Python package.
 - Other repositories and Python packages are not currently covered by the RFC process and changes are implemented on an ad-hoc basis.
+
+[amaranth-lang/amaranth]: https://github.com/amaranth-lang/amaranth
+[amaranth-lang/amaranth-soc]: https://github.com/amaranth-lang/amaranth-soc
+
+[@whitequark]: https://github.com/whitequark
+[@jfng]: https://github.com/jfng
 
 ## Table of Contents
 [Table of Contents]: #table-of-contents
