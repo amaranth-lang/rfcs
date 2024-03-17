@@ -124,12 +124,12 @@ sim.add_process(adder)
 
 DDR IO buffer as a process:
 ```python
-o = Signal(2); pin = Signal()
+clk = Signal(); o = Signal(2); pin = Signal()
 async def ddr_buffer(sim):
     while True: # could be extended to pre-capture next `o` on posedge
-        await sim.negedge()
+        await sim.negedge(clk)
         await sim.set(pin, o[0])
-        await sim.posedge()
+        await sim.posedge(clk)
         await sim.set(pin, o[1])
 sim.add_process(ddr_buffer)
 ```
