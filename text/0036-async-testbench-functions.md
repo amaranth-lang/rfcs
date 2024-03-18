@@ -1,6 +1,6 @@
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [amaranth-lang/rfcs#0036](https://github.com/amaranth-lang/rfcs/pull/0036)
-- Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
+- Start Date: 2024-03-18
+- RFC PR: [amaranth-lang/rfcs#36](https://github.com/amaranth-lang/rfcs/pull/36)
+- Amaranth Issue: [amaranth-lang/amaranth#1213](https://github.com/amaranth-lang/amaranth/issues/1213)
 
 # Async testbench functions
 
@@ -265,8 +265,7 @@ Other python libraries like [cocotb](https://docs.cocotb.org/en/stable/coroutine
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Bikeshed all the names.
-  - (@whitequark) Should we go for `posedge` (Verilog convention) or `pos_edge` (Python convention)?
+None.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
