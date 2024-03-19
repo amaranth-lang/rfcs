@@ -1,0 +1,10 @@
+.light, .rust {
+    img {
+        color-scheme: light;
+    }
+}
+.ayu, .coal, .navy {
+    img {
+        color-scheme: dark;
+    }
+}

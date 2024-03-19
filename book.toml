@@ -4,6 +4,7 @@ title = "The Amaranth RFC Book"
 [output.html]
 no-section-label = true
 git-repository-url = "https://github.com/amaranth-lang/rfcs"
+additional-css = ["theme/img-color-scheme.css"]
 
 [output.html.search]
 heading-split-level = 0
