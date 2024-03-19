@@ -32,6 +32,7 @@ The responsibility for evolving an Amaranth "subsystem" (a clearly defined part 
   - [What the process is]
   - [The RFC life-cycle]
   - [Reviewing RFCs]
+  - [Merging an RFC]
   - [Implementing an RFC]
   - [Acknowledgements]
   - [License]
