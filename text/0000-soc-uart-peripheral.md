@@ -38,37 +38,37 @@ class MySoC(wiring.Component):
 
         # Instantiate an UART peripheral:
 
-        uart_divisor = int(platform.default_clk_frequency / 115200)
+        uart_divisor_cnt = int(platform.default_clk_frequency / 115200)
 
-        m.submodules.uart = uart = uart.Peripheral(divisor_init=uart_divisor, addr_width=8, data_width=8)
+        m.submodules.uart = uart = uart.Peripheral(divisor_init=(uart_divisor_cnt, 0), addr_width=8, data_width=8)
 
         # Instantiate and connect the UART PHYs:
 
         uart_pins = platform.request("uart", 0)
 
-        uart_phy_rx = AsyncSerialRX(uart_divisor, divisor_bits=16, pins=uart_pins)
-        uart_phy_tx = AsyncSerialTX(uart_divisor, divisor_bits=16, pins=uart_pins)
+        uart_phy_rx = AsyncSerialRX(uart_divisor_cnt, divisor_bits=16, pins=uart_pins)
+        uart_phy_tx = AsyncSerialTX(uart_divisor_cnt, divisor_bits=16, pins=uart_pins)
 
         m.submodules.uart_phy_rx = uart_phy_rx
         m.submodules.uart_phy_tx = uart_phy_tx
 
         m.d.comb += [
-            uart_phy_rx.divisor.eq(uart.rx.divisor),
+            uart_phy_rx.divisor.eq(uart.rx.divisor.cnt),
 
-            uart.rx.stream.data.eq(uart_phy_rx.data),
-            uart.rx.stream.valid.eq(uart_phy_rx.rdy),
-            uart_phy_rx.ack.eq(uart.stream.ready),
+            uart.rx.data.payload.eq(uart_phy_rx.data),
+            uart.rx.data.valid.eq(uart_phy_rx.rdy),
+            uart_phy_rx.ack.eq(uart.rx.data.ready),
 
             uart.rx.overflow.eq(uart_phy_rx.err.overflow),
             uart.rx.error.eq(uart_phy_rx.err.frame),
         ]
 
         m.d.comb += [
-            uart_phy_tx.divisor.eq(uart.tx.divisor),
+            uart_phy_tx.divisor.eq(uart.tx.divisor.cnt),
 
-            uart_phy_tx.data.eq(uart.tx.stream.data),
-            uart_phy_tx.ack.eq(uart.tx.stream.valid),
-            uart.tx.stream.ready.eq(uart_phy_tx.rdy),
+            uart_phy_tx.data.eq(uart.tx.data.payload),
+            uart_phy_tx.ack.eq(uart.tx.data.valid),
+            uart.tx.data.ready.eq(uart_phy_tx.rdy),
         ]
 
         # Add the UART peripheral to a CSR bus decoder:
@@ -108,8 +108,8 @@ class MySoC(wiring.Component):
 
 - If `Enable.en` is 0, `Divisor` is read-only.
 
-- `Divisor.cnt` is initialized to `divisor_cnt_init`.
-- `Divisor.psc` is initialized to `divisor_psc_init`.
+- `Divisor.cnt` is initialized to `divisor_init[0]`.
+- `Divisor.psc` is initialized to `divisor_init[1]`.
 
 Assuming a clock frequency of 100MHz, the receiver baudrate is computed like so:
 
@@ -165,8 +165,8 @@ baudrate = ((1 << psc) * 100e6) // (cnt + 1)
 
 - If `Enable.en` is 0, `Divisor` is read-only.
 
-- `Divisor.cnt` is initialized to `divisor_cnt_init`.
-- `Divisor.psc` is initialized to `divisor_psc_init`.
+- `Divisor.cnt` is initialized to `divisor_init[0]`.
+- `Divisor.psc` is initialized to `divisor_init[1]`.
 
 Assuming a clock frequency of 100MHz, the transmitter baudrate is computed like so:
 
@@ -205,11 +205,11 @@ Its members are defined as follows:
 
 ```python3
 {
-    "divisor":  In(unsigned(20)),
-    "stream":   Out(wiring.Signature({
-                    "data":  Out(unsigned(data_bits)),
-                    "valid": Out(unsigned(1)),
-                    "ready": In(unsigned(1)),
+    "divisor":  In(data.StructLayout({"cnt": unsigned(13), "psc": unsigned(3)})),
+    "data":     Out(wiring.Signature({
+                    "payload": Out(unsigned(data_bits)),
+                    "valid":   Out(unsigned(1)),
+                    "ready":   In(unsigned(1)),
                 })),
     "overflow": Out(unsigned(1)),
     "error":    Out(unsigned(1)),
@@ -225,11 +225,11 @@ Its members are defined as follows:
 
 ```python3
 {
-    "divisor": In(unsigned(20)),
-    "stream":  In(wiring.Signature({
-                   "data":  Out(unsigned(data_bits)),
-                   "valid": Out(unsigned(1)),
-                   "ready": In(unsigned(1)),
+    "divisor": In(data.StructLayout({"cnt": unsigned(13), "psc": unsigned(3)})),
+    "data":    In(wiring.Signature({
+                   "payload": Out(unsigned(data_bits)),
+                   "valid":   Out(unsigned(1)),
+                   "ready":   In(unsigned(1)),
                })),
 }
 ```
@@ -238,7 +238,7 @@ Its members are defined as follows:
 
 The `uart.ReceiverPeripheral` class is a `wiring.Component` implementing the receiver of an UART peripheral, with:
 - a `.__init__(self, *, divisor_init, addr_width, data_width=8, name=None, data_bits=8)` constructor, where:
-  * `divisor_init` is a positive integer used as initial value for `Divisor`. It is a 16-bit value, where the lower 13 bits are assigned to `Divisor.cnt`, and the upper 3 bits are assigned to `Divisor.psc` as a log2.
+  * `divisor_init` is a tuple of two positive integers used as initial values for `Divisor.cnt` and `Divisor.psc` respectively.
   * `addr_width`, `data_width` and `name` are passed to a `csr.Builder`.
   * `data_bits` is a non-negative integer passed to `Data` and `ReceiverPHYSignature`.
 - a `.signature` property, that returns a `wiring.Signature` with the following members:
@@ -254,7 +254,7 @@ The `uart.ReceiverPeripheral` class is a `wiring.Component` implementing the rec
 
 The `uart.TransmitterPeripheral` class is a `wiring.Component` implementing the transmitter of an UART peripheral, with:
 - a `.__init__(self, *, divisor_init, addr_width, data_width=8, name=None, data_bits=8)` constructor, where:
-  * `divisor_init` is a positive integer used as initial value for `Divisor`. It is a 16-bit value, where the lower 13 bits are assigned to `Divisor.cnt`, and the upper 3 bits are assigned to `Divisor.psc` as a log2.
+  * `divisor_init` is a tuple of two positive integers used as initial values for `Divisor.cnt` and `Divisor.psc` respectively.
   * `addr_width`, `data_width` and `name` are passed to a `csr.Builder`.
   * `data_bits` is a non-negative integer passed to `Data` and `TransmitterPHYSignature`.
 - a `.signature` property, that returns a `wiring.Signature` with the following members:
@@ -270,7 +270,7 @@ The `uart.TransmitterPeripheral` class is a `wiring.Component` implementing the 
 
 The `uart.Peripheral` class is a `wiring.Component` implementing an UART peripheral, with:
 - a `.__init__(self, *, divisor_init, addr_width, data_width=8, name=None, data_bits=8)` constructor, where:
-  * `divisor_init` is a positive integer used as initial value for `Divisor`. It is a 16-bit value, where the lower 13 bits are assigned to `Divisor.cnt`, and the upper 3 bits are assigned to `Divisor.psc` as a log2.
+  * `divisor_init` is a tuple of two positive integers used as initial values for `Divisor.cnt` and `Divisor.psc` respectively.
   * `addr_width`, `data_width` and `name` are passed to a `csr.Builder`. `addr_width` must be at least 1. The peripheral address space is split in two, with the lower half occupied by a `ReceiverPeripheral` and the upper by a `TransmitterPeripheral`.
   * `data_bits` is a non-negative integer passed to `ReceiverPeripheral`, `TransmitterPeripheral`, `ReceiverPHYSignature` and `TransmitterPHYSignature`.
 
@@ -290,7 +290,7 @@ The `uart.Peripheral` class is a `wiring.Component` implementing an UART periphe
 - This design decouples the UART peripheral from its PHY, which must be provided by the user.
 - The receiver and transmitter have separate `Divider` registers, despite using identical values
   in most cases.
-- Configuring the baudrate through the `Divider` register requires knowledge of the clock frequency used by the peripheral.
+- Configuring the baudrate through the `Divisor` register requires knowledge of the clock frequency used by the peripheral.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -299,7 +299,7 @@ The `uart.Peripheral` class is a `wiring.Component` implementing an UART periphe
 - Decoupling the peripheral from the PHY allows flexibility in implementations. For example, it is easy to add FIFOs between the PHYs and the peripheral.
 - A standalone `ReceiverPeripheral` or `TransmitterPeripheral` can be instantiated.
 
-- The choice of a 16-bit `Divisor` register with a 3-bit prescaler covers the most common frequency/baudrate combinations with an error rate (due to quantization) below 1%.
+- The choice of a 13-bit divisor with a 3-bit prescaler covers the most common frequency/baudrate combinations with an error rate (due to quantization) below 1%.
 
 *TODO: a table showing frequency/baudrate combinations*
 
