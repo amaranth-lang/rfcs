@@ -46,6 +46,7 @@ What constitutes a "substantial" change is evolving based on community norms and
 
 - Any semantic or syntactic change to the language (`amaranth.hdl`) that is not a bugfix.
 - Behavioral changes to the standard library (`amaranth.lib`).
+- Behavioral changes to the simulator interface (`amaranth.sim`).
 - Behavioral changes to the toolchain interface (`amaranth.vendor`).
 
 Some changes do not require an RFC:
