@@ -55,9 +55,9 @@ class MySoC(wiring.Component):
         m.d.comb += [
             uart_phy_rx.divisor.eq(uart.rx.divisor),
 
-            uart.rx.data.payload.eq(uart_phy_rx.data),
-            uart.rx.data.valid.eq(uart_phy_rx.rdy),
-            uart_phy_rx.ack.eq(uart.rx.data.ready),
+            uart.rx.symbols.payload.eq(uart_phy_rx.data),
+            uart.rx.symbols.valid.eq(uart_phy_rx.rdy),
+            uart_phy_rx.ack.eq(uart.rx.symbols.ready),
 
             uart.rx.overflow.eq(uart_phy_rx.err.overflow),
             uart.rx.error.eq(uart_phy_rx.err.frame),
@@ -66,16 +66,16 @@ class MySoC(wiring.Component):
         m.d.comb += [
             uart_phy_tx.divisor.eq(uart.tx.divisor),
 
-            uart_phy_tx.data.eq(uart.tx.data.payload),
-            uart_phy_tx.ack.eq(uart.tx.data.valid),
-            uart.tx.data.ready.eq(uart_phy_tx.rdy),
+            uart_phy_tx.data.eq(uart.tx.symbols.payload),
+            uart_phy_tx.ack.eq(uart.tx.symbols.valid),
+            uart.tx.symbols.ready.eq(uart_phy_tx.rdy),
         ]
 
         # Add the UART peripheral to a CSR bus decoder:
 
         m.submodules.csr_decoder = csr_decoder = csr.Decoder(addr_width=31, data_width=8)
 
-        csr_decoder.add(uart.bus, addr=0x1000)
+        csr_decoder.add(uart.csr_bus, addr=0x1000)
 
         # ...
 
@@ -227,7 +227,7 @@ Its members are defined as follows:
 {
     "rst":      Out(1),
     "divisor":  Out(unsigned(16)),
-    "symbol":   In(wiring.Signature({
+    "symbols":  In(wiring.Signature({
                     "payload": Out(unsigned(symbol_width)),
                     "valid":   Out(1),
                     "ready":   In(1),
@@ -250,7 +250,7 @@ Its members are defined as follows:
 {
     "rst":     Out(1),
     "divisor": Out(unsigned(16)),
-    "symbol":  Out(wiring.Signature({
+    "symbols": Out(wiring.Signature({
                    "payload": Out(unsigned(symbol_width)),
                    "valid":   Out(1),
                    "ready":   In(1),
@@ -271,8 +271,8 @@ The `uart.ReceiverPeripheral` class is a `wiring.Component` implementing the rec
 
 ```python3
 {
-    "bus": In(csr.Signature(addr_width, data_width)),
-    "phy": Out(ReceiverPHYSignature(symbol_width)),
+    "csr_bus": In(csr.Signature(addr_width, data_width)),
+    "phy":     Out(ReceiverPHYSignature(symbol_width)),
 }
 ```
 
@@ -287,8 +287,8 @@ The `uart.TransmitterPeripheral` class is a `wiring.Component` implementing the 
 
 ```python3
 {
-    "bus": In(csr.Signature(addr_width, data_width)),
-    "phy": Out(TransmitterPHYSignature(symbol_width)),
+    "csr_bus": In(csr.Signature(addr_width, data_width)),
+    "phy":     Out(TransmitterPHYSignature(symbol_width)),
 }
 ```
 
@@ -304,9 +304,9 @@ The `uart.Peripheral` class is a `wiring.Component` implementing an UART periphe
 
 ```python3
 {
-    "bus": In(csr.Signature(addr_width, data_width)),
-    "rx":  Out(ReceiverPHYSignature(symbol_width)),
-    "tx":  Out(TransmitterPHYSignature(symbol_width)),
+    "csr_bus": In(csr.Signature(addr_width, data_width)),
+    "rx":      Out(ReceiverPHYSignature(symbol_width)),
+    "tx":      Out(TransmitterPHYSignature(symbol_width)),
 }
 ```
 
