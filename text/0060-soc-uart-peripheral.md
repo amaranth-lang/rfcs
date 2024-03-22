@@ -49,8 +49,8 @@ class MySoC(wiring.Component):
         uart_phy_rx = AsyncSerialRX(uart_divisor, divisor_bits=16, pins=uart_pins)
         uart_phy_tx = AsyncSerialTX(uart_divisor, divisor_bits=16, pins=uart_pins)
 
-        m.submodules.uart_phy_rx = uart_phy_rx
-        m.submodules.uart_phy_tx = uart_phy_tx
+        m.submodules.uart_phy_rx = ResetInserter(uart.rx.rst)(uart_phy_rx)
+        m.submodules.uart_phy_tx = ResetInserter(uart.tx.rst)(uart_phy_tx)
 
         m.d.comb += [
             uart_phy_rx.divisor.eq(uart.rx.divisor),
@@ -225,6 +225,7 @@ Its members are defined as follows:
 
 ```python3
 {
+    "rst":      Out(1),
     "divisor":  Out(unsigned(16)),
     "symbol":   In(wiring.Signature({
                     "payload": Out(unsigned(symbol_width)),
@@ -236,6 +237,8 @@ Its members are defined as follows:
 }
 ```
 
+The `rst` port is driven to 1 if `Control.enable` is 0, and 0 if `Control.enable` is 1.
+
 ### `amaranth_soc.uart.TransmitterPHYSignature`
 
 The `uart.TransmitterSignature` class is a `wiring.Signature` describing the interface between the UART peripheral and its transmitter PHY, with:
@@ -245,14 +248,17 @@ Its members are defined as follows:
 
 ```python3
 {
+    "rst":     Out(1),
     "divisor": Out(unsigned(16)),
     "symbol":  Out(wiring.Signature({
                    "payload": Out(unsigned(symbol_width)),
-                   "valid":   Out(unsigned(1)),
-                   "ready":   In(unsigned(1)),
+                   "valid":   Out(1),
+                   "ready":   In(1),
                })),
 }
 ```
+
+The `rst` port is driven to 1 if `Control.enable` is 0, and 0 if `Control.enable` is 1.
 
 ### `amaranth_soc.uart.ReceiverPeripheral`
 
@@ -319,7 +325,7 @@ The `uart.Peripheral` class is a `wiring.Component` implementing an UART periphe
 - Decoupling the peripheral from the PHY allows flexibility in implementations. For example, it is easy to add FIFOs between the PHYs and the peripheral.
 - A standalone `ReceiverPeripheral` or `TransmitterPeripheral` can be instantiated.
 
-- The choice of a 16-bit divisor with an (otherwise) unspecified encoding gives allows implementation freedom:
+- The choice of a 16-bit divisor with an (otherwise) unspecified encoding allows implementation freedom:
   * some may not care about a clock divisor at all (e.g. a behavioral model of an UART PHY, interfacing with a pseudo-TTY).
   * some may provide their own divisor encoding scheme (e.g. a 13-bit base value with a 3-bit scale, that can cover common frequency/baudrate combinations with a [<1% error rate](https://github.com/amaranth-lang/rfcs/files/14672989/baud.py.txt) (credit: [@whitequark](https://github.com/whitequark))).
 
