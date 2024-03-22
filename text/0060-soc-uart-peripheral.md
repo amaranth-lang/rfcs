@@ -97,8 +97,8 @@ class MySoC(wiring.Component):
 
 `Control.enable` is initialized to 0 on reset.
 
-If `Control.enable` is 0, the receiver PHY should be held in reset state.
-If `Control.enable` is 1, the receiver PHY should operate normally.
+- If `Control.enable` is 0, the receiver PHY should be held in reset state.
+- If `Control.enable` is 1, the receiver PHY should operate normally.
 
 ##### Status (read/write)
 
@@ -135,8 +135,8 @@ baudrate = int(100e6 / divisor)
 
 An implementation may also choose to ignore the `Divisor` register and configure the baudrate through unspecified means.
 
-If `Control.enable` is 0, `Divisor` is read/write.
-If `Control.enable` is 1, `Divisor` is read-only.
+- If `Control.enable` is 0, `Divisor` is read/write.
+- If `Control.enable` is 1, `Divisor` is read-only.
 
 `Divisor` is initialized to `divisor_init` on reset.
 
@@ -147,9 +147,9 @@ If `Control.enable` is 1, `Divisor` is read-only.
          {name: 'data', bits: 8, attr: 'R'},
      ], {bits: 8})">
 
-If `Control.enable` is 0 or `Status.ready` is 0:
+- If `Control.enable` is 0 or `Status.ready` is 0:
   * reading from `Data` has no side-effect and returns an unspecified value.
-If `Control.enable` is 1 and `Status.ready` is 1:
+- If `Control.enable` is 1 and `Status.ready` is 1:
   * reading from `Data` consumes one symbol from the receive buffer and returns it.
 
 #### Transmitter
@@ -164,8 +164,8 @@ If `Control.enable` is 1 and `Status.ready` is 1:
 
 `Control.enable` is initialized to 0 on reset.
 
-If `Control.enable` is 0, the transmitter PHY should be held in reset state.
-If `Control.enable` is 1, the transmitter PHY should operate normally.
+- If `Control.enable` is 0, the transmitter PHY should be held in reset state.
+- If `Control.enable` is 1, the transmitter PHY should operate normally.
 
 ##### Status (read-only)
 
@@ -194,8 +194,8 @@ baudrate = int(100e6 / divisor)
 
 An implementation may also choose to ignore the `Divisor` register and configure the baudrate through unspecified means.
 
-If `Control.enable` is 0, `Divisor` is read/write.
-If `Control.enable` is 1, `Divisor` is read-only.
+- If `Control.enable` is 0, `Divisor` is read/write.
+- If `Control.enable` is 1, `Divisor` is read-only.
 
 `Divisor` is initialized to `divisor_init` on reset.
 
@@ -208,9 +208,9 @@ If `Control.enable` is 1, `Divisor` is read-only.
 
 - If `Status.rdy` is 1, writing to `Data` adds one character to the transmit buffer.
 
-If `Control.enable` is 0 or `Status.ready` is 0:
+- If `Control.enable` is 0 or `Status.ready` is 0:
   * writing to `Data` has no side-effect.
-If `Control.enable` is 1 and `Status.ready` is 1:
+- If `Control.enable` is 1 and `Status.ready` is 1:
   * writing to `Data` adds one symbol to the transmit buffer.
 
 ## Reference-level explanation
