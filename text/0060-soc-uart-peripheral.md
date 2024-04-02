@@ -40,7 +40,10 @@ class MySoC(wiring.Component):
 
         uart_divisor = int(platform.default_clk_frequency / 115200)
 
-        m.submodules.uart = uart = uart.Peripheral(divisor_init=uart_divisor, addr_width=8, data_width=8)
+        uart = uart.Peripheral(addr_width=8, data_width=8, symbol_shape=unsigned(8),
+                               phy_config_shape=unsigned(16), phy_config_init=uart_divisor)
+
+        m.submodules.uart = uart
 
         # Instantiate and connect the UART PHYs:
 
@@ -53,7 +56,7 @@ class MySoC(wiring.Component):
         m.submodules.uart_phy_tx = ResetInserter(uart.tx.rst)(uart_phy_tx)
 
         m.d.comb += [
-            uart_phy_rx.divisor.eq(uart.rx.divisor),
+            uart_phy_rx.divisor.eq(uart.rx.phy_config),
 
             uart.rx.symbols.payload.eq(uart_phy_rx.data),
             uart.rx.symbols.valid.eq(uart_phy_rx.rdy),
@@ -64,7 +67,7 @@ class MySoC(wiring.Component):
         ]
 
         m.d.comb += [
-            uart_phy_tx.divisor.eq(uart.tx.divisor),
+            uart_phy_tx.divisor.eq(uart.tx.phy_config),
 
             uart_phy_tx.data.eq(uart.tx.symbols.payload),
             uart_phy_tx.ack.eq(uart.tx.symbols.valid),
@@ -87,18 +90,34 @@ class MySoC(wiring.Component):
 
 #### Receiver
 
-##### Control (read/write)
+##### Config (read/write)
 
-<img src="./0060-soc-uart-peripheral/reg-control.svg"
+<img src="./0060-soc-uart-peripheral/reg-config.svg"
      alt="bf([
          { name: 'enable', bits: 1, attr: 'RW' },
          { bits: 7, attr: 'ResR0W0' },
      ], {bits: 8})">
 
-`Control.enable` is initialized to 0 on reset.
+`Config.enable` is initialized to 0 on reset.
 
-- If `Control.enable` is 0, the receiver PHY should be held in reset state.
-- If `Control.enable` is 1, the receiver PHY should operate normally.
+- If `Config.enable` is 0, the receiver PHY should be held in reset state.
+- If `Config.enable` is 1, the receiver PHY should operate normally.
+
+##### PhyConfig (read/write)
+
+<img src="./0060-soc-uart-peripheral/reg-phy_config.svg"
+     alt="bf([
+         {name: 'phy_config', bits: 16, attr: 'RW'},
+     ], {bits: 16})">
+
+The `PhyConfig` register exposes an implementation-specific mechanism to configure the receiver PHY, such as its baudrate. Its shape is given by the `phy_config_shape` parameter (`unsigned(16)` in the above example).
+
+An implementation may choose to not use the `PhyConfig` register and configure its PHY through unspecified means.
+
+- If `Config.enable` is 0, `PhyConfig` is read/write.
+- If `Config.enable` is 1, `PhyConfig` is read-only.
+
+`PhyConfig` is initialized to `phy_config_init` on reset.
 
 ##### Status (read/write)
 
@@ -116,29 +135,7 @@ class MySoC(wiring.Component):
 
 `Status.overflow` and `Status.error` are initialized to 0 on reset.
 
-The value of the `Status` register is not affected by `Control.enable`.
-
-##### Divisor (read/write)
-
-<img src="./0060-soc-uart-peripheral/reg-divisor.svg"
-     alt="bf([
-         {name: 'divisor', bits: 16, attr: 'RW'},
-     ], {bits: 16})">
-
-The `Divisor` register exposes an implementation-specific mechanism to control the receiver baudrate.
-
-For example, assuming a clock frequency of 100MHz, an implementation may configure its baudrate like so:
-
-```python3
-baudrate = int(100e6 / divisor)
-```
-
-An implementation may also choose to ignore the `Divisor` register and configure the baudrate through unspecified means.
-
-- If `Control.enable` is 0, `Divisor` is read/write.
-- If `Control.enable` is 1, `Divisor` is read-only.
-
-`Divisor` is initialized to `divisor_init` on reset.
+`Status.overflow` and `Status.error` are not reset when writing 0 to `Config.enable`.
 
 ##### Data (read-only)
 
@@ -147,25 +144,38 @@ An implementation may also choose to ignore the `Divisor` register and configure
          {name: 'data', bits: 8, attr: 'R'},
      ], {bits: 8})">
 
-- If `Control.enable` is 0 or `Status.ready` is 0:
+The `Data` register can be read to consume symbols from the receive buffer. Its shape is given by the `symbol_shape` parameter (`unsigned(8)` in the above example).
+
+- If `Config.enable` is 0 or `Status.ready` is 0:
   * reading from `Data` has no side-effect and returns an unspecified value.
-- If `Control.enable` is 1 and `Status.ready` is 1:
+- If `Config.enable` is 1 and `Status.ready` is 1:
   * reading from `Data` consumes one symbol from the receive buffer and returns it.
 
 #### Transmitter
 
-##### Control (read/write)
+##### Config (read/write)
 
-<img src="./0060-soc-uart-peripheral/reg-control.svg"
+<img src="./0060-soc-uart-peripheral/reg-config.svg"
      alt="bf([
          { name: 'enable', bits: 1, attr: 'RW' },
          { bits: 7, attr: 'ResR0W0' },
      ], {bits: 1})">
 
-`Control.enable` is initialized to 0 on reset.
+`Config.enable` is initialized to 0 on reset.
 
-- If `Control.enable` is 0, the transmitter PHY should be held in reset state.
-- If `Control.enable` is 1, the transmitter PHY should operate normally.
+- If `Config.enable` is 0, the transmitter PHY should be held in reset state.
+- If `Config.enable` is 1, the transmitter PHY should operate normally.
+
+##### PhyConfig (read/write)
+
+The `PhyConfig` register exposes an implementation-specific mechanism to configure the transmitter PHY, such as its baudrate. Its shape is given by the `phy_config_shape` parameter (`unsigned(16)` in the above example).
+
+An implementation may choose to not use the `PhyConfig` register and configure its PHY through unspecified means.
+
+- If `Config.enable` is 0, `PhyConfig` is read/write.
+- If `Config.enable` is 1, `PhyConfig` is read-only.
+
+`PhyConfig` is initialized to `phy_config_init` on reset.
 
 ##### Status (read-only)
 
@@ -177,28 +187,6 @@ An implementation may also choose to ignore the `Divisor` register and configure
 
 - `Status.ready` indicates that the transmit buffer has available space for at least one character.
 
-##### Divisor (read/write)
-
-<img src="./0060-soc-uart-peripheral/reg-divisor.svg"
-     alt="bf([
-         {name: 'divisor', bits: 16, attr: 'RW'},
-     ], {bits: 16})">
-
-The `Divisor` register exposes an implementation-specific mechanism to control the transmitter baudrate.
-
-For example, assuming a clock frequency of 100MHz, an implementation may configure its baudrate like so:
-
-```python3
-baudrate = int(100e6 / divisor)
-```
-
-An implementation may also choose to ignore the `Divisor` register and configure the baudrate through unspecified means.
-
-- If `Control.enable` is 0, `Divisor` is read/write.
-- If `Control.enable` is 1, `Divisor` is read-only.
-
-`Divisor` is initialized to `divisor_init` on reset.
-
 ##### Data (write-only)
 
 <img src="./0060-soc-uart-peripheral/reg-tx-data.svg"
@@ -206,107 +194,105 @@ An implementation may also choose to ignore the `Divisor` register and configure
          {name: 'data', bits: 8, attr: 'W'},
      ], {bits: 8})">
 
-- If `Status.rdy` is 1, writing to `Data` adds one character to the transmit buffer.
+The `Data` register can be written to append symbols to the transmit buffer. Its shape is given by the `symbol_shape` parameter (`unsigned(8)` in the above example).
 
-- If `Control.enable` is 0 or `Status.ready` is 0:
+- If `Config.enable` is 0 or `Status.ready` is 0:
   * writing to `Data` has no side-effect.
-- If `Control.enable` is 1 and `Status.ready` is 1:
+- If `Config.enable` is 1 and `Status.ready` is 1:
   * writing to `Data` adds one symbol to the transmit buffer.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-### `amaranth_soc.uart.ReceiverPHYSignature`
+### `amaranth_soc.uart.RxPhySignature`
 
-The `uart.ReceiverPHYSignature` class is a `wiring.Signature` describing the interface between the UART peripheral and its receiver PHY, with:
-- a `.__init__(self, *, symbol_width)` constructor, where `symbol_width` is a positive integer.
+The `uart.RxPhySignature` class is a `wiring.Signature` describing the interface between the UART peripheral and its receiver PHY, with:
+- a `.__init__(self, phy_config_shape, symbol_shape)` constructor, where `phy_config_shape` and `symbol_shape` are shape-like objects.
 
 Its members are defined as follows:
 
 ```python3
 {
     "rst":      Out(1),
-    "divisor":  Out(unsigned(16)),
-    "symbols":  In(wiring.Signature({
-                    "payload": Out(unsigned(symbol_width)),
-                    "valid":   Out(1),
-                    "ready":   In(1),
-                })),
+    "config":   Out(phy_config_shape),
+    "symbols":  In(stream.Signature(symbol_shape)),
     "overflow": In(1),
     "error":    In(1),
 }
 ```
 
-The `rst` port is driven to 1 if `Control.enable` is 0, and 0 if `Control.enable` is 1.
+- The `rst` port is driven to 1 if `Config.enable` is 0, and 0 if `Config.enable` is 1.
+- The `config` remains constant if `rst` is 0.
+- The `overflow` port is pulsed for one clock cycle if a symbol was received before the previous one is acknowledged (i.e. before `symbols.ready` is high).
+- The `error` port is pulsed for one clock cycle in case of an unspecified error, specific to the PHY implementation.
 
-### `amaranth_soc.uart.TransmitterPHYSignature`
+### `amaranth_soc.uart.TxPhySignature`
 
-The `uart.TransmitterSignature` class is a `wiring.Signature` describing the interface between the UART peripheral and its transmitter PHY, with:
-- a `.__init__(self, *, symbol_width)` constructor, where `symbol_width` is a positive integer.
+The `uart.TxPhySignature` class is a `wiring.Signature` describing the interface between the UART peripheral and its transmitter PHY, with:
+- a `.__init__(self, phy_config_shape, symbol_shape)` constructor, where `phy_config_shape` and `symbol_shape` are shape-like objects.
 
 Its members are defined as follows:
 
 ```python3
 {
     "rst":     Out(1),
-    "divisor": Out(unsigned(16)),
-    "symbols": Out(wiring.Signature({
-                   "payload": Out(unsigned(symbol_width)),
-                   "valid":   Out(1),
-                   "ready":   In(1),
-               })),
+    "config":  Out(phy_config_shape),
+    "symbols": Out(stream.Signature(symbol_shape)),
 }
 ```
 
-The `rst` port is driven to 1 if `Control.enable` is 0, and 0 if `Control.enable` is 1.
+- The `rst` port is driven to 1 if `Config.enable` is 0, and 0 if `Config.enable` is 1.
+- The `config` remains constant if `rst` is 0.
 
-### `amaranth_soc.uart.ReceiverPeripheral`
+### `amaranth_soc.uart.RxPeripheral`
 
-The `uart.ReceiverPeripheral` class is a `wiring.Component` implementing the receiver of an UART peripheral, with:
-- a `.__init__(self, *, divisor_init, addr_width, data_width=8, name=None, symbol_width=8)` constructor, where:
-  * `divisor_init` is a positive integer used as initial values for `Divisor.divisor`.
+The `uart.RxPeripheral` class is a `wiring.Component` implementing the receiver of an UART peripheral, with:
+- a `.__init__(self, *, addr_width, data_width=8, name=None, phy_config_shape=unsigned(16), phy_config_init=0, symbol_shape=unsigned(8))` constructor, where:
   * `addr_width`, `data_width` and `name` are passed to a `csr.Builder`.
-  * `symbol_width` is a positive integer passed to `Data` and `ReceiverPHYSignature`.
+  * `phy_config_shape` is the shape of the single-field `PhyConfig` register.
+  * `phy_config_init` is the initial value of the single-field `PhyConfig` register.
+  * `symbol_shape` is the shape of the single-field `Data` register.
 - a `.signature` property, that returns a `wiring.Signature` with the following members:
 
 ```python3
 {
     "csr_bus": In(csr.Signature(addr_width, data_width)),
-    "phy":     Out(ReceiverPHYSignature(symbol_width)),
+    "phy":     Out(RxPhySignature(phy_config_shape, symbol_shape)),
 }
 ```
 
-### `amaranth_soc.uart.TransmitterPeripheral`
+### `amaranth_soc.uart.TxPeripheral`
 
-The `uart.TransmitterPeripheral` class is a `wiring.Component` implementing the transmitter of an UART peripheral, with:
-- a `.__init__(self, *, divisor_init, addr_width, data_width=8, name=None, symbol_width=8)` constructor, where:
-  * `divisor_init` is a positive integer used as initial values for `Divisor.divisor`.
+The `uart.TxPeripheral` class is a `wiring.Component` implementing the transmitter of an UART peripheral, with:
+- a `.__init__(self, *, addr_width, data_width=8, name=None, phy_config_shape=unsigned(16), phy_config_init=0, symbol_shape=unsigned(8))` constructor, where:
   * `addr_width`, `data_width` and `name` are passed to a `csr.Builder`.
-  * `symbol_width` is a positive integer passed to `Data` and `TransmitterPHYSignature`.
+  * `phy_config_shape` is the shape of the single-field `PhyConfig` register.
+  * `phy_config_init` is the initial value of the single-field `PhyConfig` register.
+  * `symbol_shape` is the shape of the single-field `Data` register.
 - a `.signature` property, that returns a `wiring.Signature` with the following members:
 
 ```python3
 {
     "csr_bus": In(csr.Signature(addr_width, data_width)),
-    "phy":     Out(TransmitterPHYSignature(symbol_width)),
+    "phy":     Out(TxPhySignature(phy_config_shape, symbol_shape)),
 }
 ```
 
 ### `amaranth_soc.uart.Peripheral`
 
 The `uart.Peripheral` class is a `wiring.Component` implementing an UART peripheral, with:
-- a `.__init__(self, *, divisor_init, addr_width, data_width=8, name=None, symbol_width=8)` constructor, where:
-  * `divisor_init` is a positive integer used as initial values for `Divisor.divisor`.
-  * `addr_width`, `data_width` and `name` are passed to a `csr.Builder`. `addr_width` must be at least 1. The peripheral address space is split in two, with the lower half occupied by a `ReceiverPeripheral` and the upper by a `TransmitterPeripheral`.
-  * `symbol_width` is a positive integer passed to `ReceiverPeripheral`, `TransmitterPeripheral`, `ReceiverPHYSignature` and `TransmitterPHYSignature`.
+- a `.__init__(self, *, addr_width, data_width=8, name=None, phy_config_shape=unsigned(16), phy_config_init=0, symbol_shape=unsigned(8))` constructor, where:
+  * `addr_width`, `data_width` and `name` are passed to a `csr.Builder`. `addr_width` must be at least 1. The peripheral address space is split in two, with the lower half occupied by a `RxPeripheral` and the upper by a `TxPeripheral`.
+  * `phy_config_shape` and `phy_config_init` are the shape and initial value of the `PhyConfig` registers of `RxPeripheral` and `TxPeripheral`.
+  * `symbol_shape` is the shape of the `Data` registers of `RxPeripheral` and `TxPeripheral`.
 
 - a `.signature` property, that returns a `wiring.Signature` with the following members:
 
 ```python3
 {
     "csr_bus": In(csr.Signature(addr_width, data_width)),
-    "rx":      Out(ReceiverPHYSignature(symbol_width)),
-    "tx":      Out(TransmitterPHYSignature(symbol_width)),
+    "rx":      Out(RxPhySignature(phy_config_shape, symbol_shape)),
+    "tx":      Out(TxPhySignature(phy_config_shape, symbol_shape)),
 }
 ```
 
@@ -314,24 +300,20 @@ The `uart.Peripheral` class is a `wiring.Component` implementing an UART periphe
 [drawbacks]: #drawbacks
 
 - This design decouples the UART peripheral from its PHY, which must be provided by the user.
-- The receiver and transmitter have separate `Divider` registers, despite using identical values
-  in most cases.
-- Configuring the baudrate through the `Divisor` register requires knowledge of the clock frequency used by the peripheral.
+- An `uart.Peripheral` has separate `PhyConfig` registers for its receiver and transmitter, despite using common values in most cases due to their symmetry.
+- A `PhyConfig` register has a single field whose shape is user-provided, even though it may contain multiple values. Amaranth SoC will have to take this into account when generating a BSP.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - This design is intended to be minimal yet useful for the most common use-cases (i.e. 8-N-1).
 - Decoupling the peripheral from the PHY allows flexibility in implementations. For example, it is easy to add FIFOs between the PHYs and the peripheral.
-- A standalone `ReceiverPeripheral` or `TransmitterPeripheral` can be instantiated.
-
-- The choice of a 16-bit divisor with an (otherwise) unspecified encoding allows implementation freedom:
-  * some may not care about a clock divisor at all (e.g. a behavioral model of an UART PHY, interfacing with a pseudo-TTY).
-  * some may provide their own divisor encoding scheme (e.g. a 13-bit base value with a 3-bit scale, that can cover common frequency/baudrate combinations with a [<1% error rate](https://github.com/amaranth-lang/rfcs/files/14672989/baud.py.txt) (credit: [@whitequark](https://github.com/whitequark))).
-
+- A standalone `RxPeripheral` or `TxPeripheral` can be instantiated.
+- The choice of a parameterized shape for the `PhyConfig` register facilitates interoperability with PHY implementations. Some may not rely on this register and configure themselves through alternate means (or not at all).
 
 - As an alternative:
   * implement the PHY in the peripheral itself, and expose pin interfaces in a similar manner as the GPIO peripheral of [RFC 49](https://amaranth-lang.org/rfcs/0049-soc-gpio-peripheral.html).
+  * do not allow `PhyConfig` to be parameterized and provide its layout ourselves.
 
 ## Prior art
 [prior-art]: #prior-art
