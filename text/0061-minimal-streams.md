@@ -73,8 +73,8 @@ Like other `amaranth.lib` modules, it is intended to be imported with the `from 
 There is purposefully no `amaranth.lib.stream.Signature.payload_shape` property. It is expected that a future RFC will enable construction and introspection of complex streams, and the provision of any introspection of the payload is deferred until then.
 
 The `amaranth.lib.fifo.FIFOInterface` class is extended with properties:
-    - `r_stream: stream.Interface`: interface adapter with `payload = .r_data`, `valid = .r_rdy`, `ready = .r_en`.
-    - `w_stream: stream.Interface`: interface adapter with `payload = .w_data`, `valid = .w_en`, `ready = .r_rdy`.
+- `r_stream: stream.Interface`: interface adapter with `payload = .r_data`, `valid = .r_rdy`, `ready = .r_en`.
+- `w_stream: stream.Interface`: interface adapter with `payload = .w_data`, `valid = .w_en`, `ready = .r_rdy`.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
