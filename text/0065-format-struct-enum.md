@@ -86,12 +86,6 @@ class MyStruct(ShapeCastable):
     def format(self, obj, spec):
         assert spec == ""
         return Format("{{a: {}, b: {}, c: {}}}", obj.a, obj.b, obj.c)
-        return Format.Struct(Value.cast(obj), {
-            # Assume obj.a, obj.b, obj.c are accessors that return the struct fields as ValueLike.
-            "a": Format("{}", obj.a),
-            "b": Format("{}", obj.b),
-            "c": Format("{}", obj.c),
-        })
 ```
 
 with the added benefit that any `MyStruct`-shaped signal will automatically have per-field traces included in VCD output and per-field wires included in RTLIL output.
