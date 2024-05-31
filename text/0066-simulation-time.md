@@ -7,7 +7,7 @@
 ## Summary
 [summary]: #summary
 
-Add a type for representing time durations and simulator methods to query the elapsed time.
+Add a type for representing time durations (including clock periods) and simulator methods to query the elapsed time.
 
 ## Motivation
 [motivation]: #motivation
@@ -21,7 +21,7 @@ Also, to quote @whitequark: Time is not a number.
 ## Guide- and reference-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-A new type `amaranth.sim.Period` is introduced.
+A new type `Period` is introduced.
 It is immutable, has no public constructor and is instead constructed through the following classmethods:
 - `.s(duration: numbers.Real)`
 - `.ms(duration: numbers.Real)`
@@ -69,16 +69,25 @@ The following operators are defined:
 
 `Simulator` and `SimulatorContext` both have a `.time() -> Period` method added that returns the elapsed time since start of simulation.
 
-The methods that currently take seconds as a `float` are updated to take a `Period`:
-- `.add_clock()`
-- `.delay()`
+These methods that has a `period` argument currently taking seconds as a `float` are updated to take a `Period`:
+- `Simulator.add_clock()`
+- `SimulatorContext.delay()`
 
-The ability to pass seconds as a `float` is deprecated and removed in a future Amaranth version.
+These methods that has a `frequency` argument currently taking Hz as a `float` are updated to take a `Period`:
+- `ResourceManager.add_clock_constraint()`
+- `Clock.__init__()`
+
+The ability to pass seconds or Hz directly as a `float` is deprecated and removed in a future Amaranth version.
+
+The `Clock.period` property is updated to return a `Period` and the `Clock.frequency` property is deprecated.
+
+Consequently, `Platform.default_clk_frequency()` is also deprecated and replaced with a new method `Platform.default_clk_period() -> Period`.
+
 
 ## Drawbacks
 [drawbacks]: #drawbacks
 
-- Deprecating being able to pass seconds as a `float` creates churn.
+- Deprecating being able to pass seconds or Hz directly as a `float` creates churn.
 
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -110,8 +119,12 @@ None.
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- With the scope of `Period` extended beyond simulation, where do we put it?
+
 - The usual bikeshedding.
   - Case, e.g. `.MHz` vs `.mhz`.
+
+- Should `Period` also have properties to return the reciprocal frequency?
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
