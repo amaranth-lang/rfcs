@@ -1,6 +1,6 @@
-- Start Date: (fill in with date at which the RFC is merged, YYYY-MM-DD)
-- RFC PR: [amaranth-lang/rfcs#0070](https://github.com/amaranth-lang/rfcs/pull/70)
-- Amaranth SoC Issue: [amaranth-lang/amaranth-soc#0000](https://github.com/amaranth-lang/amaranth-soc/issues/0000)
+- Start Date: 2024-06-28
+- RFC PR: [amaranth-lang/rfcs#70](https://github.com/amaranth-lang/rfcs/pull/70)
+- Amaranth SoC Issue: [amaranth-lang/amaranth-soc#93](https://github.com/amaranth-lang/amaranth-soc/issues/93)
 
 # Unify the naming of `MemoryMap` resources and windows
 
@@ -34,13 +34,13 @@ Some examples:
 
 ```python3
 >>> MemoryMap.Name(("rx", "status"))
-('rx', 'status')
+Name('rx', 'status')
 >>> MemoryMap.Name(("uart", 0))
-('uart', 0)
->>> MemoryMap.Name(MemoryMap.Name("uart", 0))
-('uart', 0)
+Name('uart', 0)
+>>> MemoryMap.Name(MemoryMap.Name(("uart", 0))
+Name('uart', 0)
 >>> MemoryMap.Name("foo")
-('foo',)
+Name('foo',)
 ```
 
 ### Assigning resource names
@@ -133,12 +133,12 @@ In a `MemoryMap` hierarchy, each resource is identified by a path. The path of a
 ```python3
 >>> for res_info in decoder.csr_bus.memory_map.all_resources():
 ...     print(res_info.path)
-(('uart', 0), ('rx', 'config'))
-(('uart', 0), ('rx', 'status'))
-(('uart', 0), ('rx', 'data'))
-(('uart', 1), ('rx', 'config'))
-(('uart', 1), ('rx', 'status'))
-(('uart', 1), ('rx', 'data'))
+(Name('uart', 0), Name('rx', 'config'))
+(Name('uart', 0), Name('rx', 'status'))
+(Name('uart', 0), Name('rx', 'data'))
+(Name('uart', 1), Name('rx', 'config'))
+(Name('uart', 1), Name('rx', 'status'))
+(Name('uart', 1), Name('rx', 'data'))
 ```
 
 ## Reference-level explanation
@@ -183,20 +183,21 @@ As a consequence of this proposal, the following changes are made to other modul
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Providing a `MemoryMap.Name` class for resource and window names facilitates their validation and documentation.
-  * Alternative #1: do not add a class, and use standard tuples instead. Names will have to be validated by other means.
-  * Alternative #2: use `MemoryMap.Name` for resource names only. Window names remain limited to strings.
+  * ~~Alternative #1: do not add a class, and use standard tuples instead. Names will have to be validated by other means.~~
+  * ~~Alternative #2: use `MemoryMap.Name` for resource names only. Window names remain limited to strings.~~
 
 ## Prior art
 [prior-art]: #prior-art
 
 - Resource names became tuples of strings as a consequence of [RFC 16](https://amaranth-lang.org/rfcs/0016-soc-csr-regs.html). However, array indices defined with `csr.Builder.Index()` were [cast to strings](https://github.com/amaranth-lang/amaranth-soc/issues/69) when `.as_memory_map()` was called.
 
-## Unresolved questions
+## Resolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Should we require the presence of at least one string in `MemoryMap.Name` ?
+  * Empty names are forbidden and transparent windows (i.e. without names) must use `None` instead. Further validation is deferred to consumers of the memory map (e.g. a BSP generator).
 - Should we specify the order between strings and integers ? In `csr.Builder`, array indices precede cluster and register names (e.g. `('bar', 0, 'foo')` could be formatted as `"bar.foo[0]"`).
-- Bikeshedding `MemoryMap.Name`.
+  * No, this decision is left out to consumers of the memory map. They may interpret a name differently depending on what it is assigned to.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
