@@ -43,6 +43,13 @@ To convert it back to a number, the following properties are available:
 - `.picoseconds -> fractions.Fraction`
 - `.femtoseconds -> int`
 
+To calculate the reciprocal frequency, the following properties are available:
+- `.hertz -> fractions.Fraction`
+- `.kilohertz -> fractions.Fraction`
+- `.megahertz -> fractions.Fraction`
+- `.gigahertz -> fractions.Fraction`
+  - Accessing these properties when the period is zero will raise `ZeroDivisionError`.
+
 The following operators are defined:
 - `.__lt__(other: Period) -> bool`
 - `.__le__(other: Period) -> bool`
@@ -67,7 +74,7 @@ The following operators are defined:
   - Operators involving `numbers.Real` operands have the result rounded back to the closest integer femtosecond representation.
   - Operators given unsupported operand combinations will return `NotImplemented`.
 
-`Simulator` and `SimulatorContext` both have a `.time() -> Period` method added that returns the elapsed time since start of simulation.
+`SimulatorContext` have an `.elapsed_time() -> Period` method added that returns the elapsed time since start of simulation.
 
 These methods that has a `period` argument currently taking seconds as a `float` are updated to take a `Period`:
 - `Simulator.add_clock()`
@@ -110,6 +117,8 @@ Consequently, `Platform.default_clk_frequency()` is also deprecated and replaced
   - Modulo of time periods is the remainder and thus still a time period.
     Potentially useful to calculate the phase offset between a timestamp and a clock period.
   - Reflected operators that only accept `Period` operands are redundant and omitted.
+
+- `.elapsed_time()` is only available from within a testbench/process, where it is well defined.
 
 ## Prior art
 [prior-art]: #prior-art
