@@ -101,7 +101,7 @@ The `amaranth.lib.io.Buffer` component is changed to accept `SimulationPort`s an
 
 ```python
 m.d.comb += [
-    buffer.i.eq(Cat(Mux(port.oe, o, i) for o, i in zip(port.o, port.i))),
+    buffer.i.eq(Cat(Mux(oe, o, i) for oe, o, i in zip(port.oe, port.o, port.i))),
     port.o.eq(buffer.o),
     port.oe.eq(buffer.oe.replicate(len(port))),
 ]
@@ -111,7 +111,7 @@ The `amaranth.lib.io.FFBuffer` component is changed to accept `SimulationPort`s 
 
 ```python
 m.d[buffer.i_domain] += [
-    buffer.i.eq(Cat(Mux(port.oe, o, i) for o, i in zip(port.o, port.i))),
+    buffer.i.eq(Cat(Mux(oe, o, i) for oe, o, i in zip(port.oe, port.o, port.i))),
 ]
 m.d[buffer.o_domain] += [
     port.o.eq(buffer.o),
