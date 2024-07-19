@@ -53,9 +53,9 @@ class SPIController(wiring.Component):
 To simulate such a component, instantiate `lib.io.SimulationPort` objects for each of the ports, and use their `.o`, `.oe`, and `.i` signals to verify the functionality:
 
 ```python
-sck_port  = io.SimulationPort(1, direction="o")
-copi_port = io.SimulationPort(1, direction="o")
-cipo_port = io.SimulationPort(1, direction="i")
+sck_port  = io.SimulationPort("o", 1)
+copi_port = io.SimulationPort("o", 1)
+cipo_port = io.SimulationPort("i", 1)
 
 dut = SPIController(sck_port, copi_port, cipo_port)
 
