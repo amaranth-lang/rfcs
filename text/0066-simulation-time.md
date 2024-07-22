@@ -22,18 +22,22 @@ Also, to quote @whitequark: Time is not a number.
 [guide-level-explanation]: #guide-level-explanation
 
 A new type `Period` is introduced.
-It is immutable, has no public constructor and is instead constructed through the following classmethods:
-- `.s(duration: numbers.Real)`
-- `.ms(duration: numbers.Real)`
-- `.us(duration: numbers.Real)`
-- `.ns(duration: numbers.Real)`
-- `.ps(duration: numbers.Real)`
-- `.fs(duration: numbers.Real)`
-- `.Hz(frequency: numbers.Real)`
-- `.kHz(frequency: numbers.Real)`
-- `.MHz(frequency: numbers.Real)`
-- `.GHz(frequency: numbers.Real)`
-  - The argument will be scaled according to the SI prefix on the method and the `duration` or reciprocal of `frequency` then used to calculate the closest integer femtosecond representation.
+It is immutable and has a constructor accepting at most one named argument, giving the following valid forms of construction:
+- `Period()`
+  - Constructs a zero period.
+- `Period(seconds: numbers.Real)`
+- `Period(milliseconds: numbers.Real)`
+- `Period(microseconds: numbers.Real)`
+- `Period(nanoseconds: numbers.Real)`
+- `Period(picoseconds: numbers.Real)`
+- `Period(femtoseconds: numbers.Real)`
+  - The argument will be scaled according to its SI prefix and used to calculate the closest integer femtosecond representation.
+- `Period(hertz: numbers.Real)`
+- `Period(kilohertz: numbers.Real)`
+- `Period(megahertz: numbers.Real)`
+- `Period(gigahertz: numbers.Real)`
+  - The argument will be scaled according to its SI prefix and its reciprocal used to calculate the closest integer femtosecond representation.
+    A value of zero will raise `ZeroDivisionError`.
 
 To convert it back to a number, the following properties are available:
 - `.seconds -> fractions.Fraction`
@@ -120,6 +124,9 @@ Consequently, `Platform.default_clk_frequency()` is also deprecated and replaced
 
 - `.elapsed_time()` is only available from within a testbench/process, where it is well defined.
 
+- Instead of named constructor arguments, we could use a classmethod for each SI prefix.
+  This was proposed in an earlier revision of this RFC.
+
 ## Prior art
 [prior-art]: #prior-art
 
@@ -130,10 +137,12 @@ None.
 
 - With the scope of `Period` extended beyond simulation, where do we put it?
 
-- The usual bikeshedding.
-  - Case, e.g. `.MHz` vs `.mhz`.
+- Should we use shorter argument/property names like `MHz` instead of (or an alias in addition to) `megahertz`?
 
-- Should `Period` also have properties to return the reciprocal frequency?
+- Should we disallow passing a negative frequency or accessing a frequency property on a negative period?
+
+- We could allow passing multiple constructor arguments and add them together -- should we?
+  - Probably not. Limited usefulness for durations and nonsensical for frequencies.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
