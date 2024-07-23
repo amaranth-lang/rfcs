@@ -22,6 +22,7 @@ Also, to quote @whitequark: Time is not a number.
 [guide-level-explanation]: #guide-level-explanation
 
 A new type `Period` is introduced.
+It is exported from `amaranth.hdl` and also re-exported from `amaranth.sim`.
 It is immutable and has a constructor accepting at most one named argument, giving the following valid forms of construction:
 - `Period()`
   - Constructs a zero period.
@@ -133,8 +134,6 @@ None.
 
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
-
-- With the scope of `Period` extended beyond simulation, where do we put it?
 
 - Should we disallow passing a negative frequency or accessing a frequency property on a negative period?
 
