@@ -25,17 +25,17 @@ A new type `Period` is introduced.
 It is immutable and has a constructor accepting at most one named argument, giving the following valid forms of construction:
 - `Period()`
   - Constructs a zero period.
-- `Period(seconds: numbers.Real)`
-- `Period(milliseconds: numbers.Real)`
-- `Period(microseconds: numbers.Real)`
-- `Period(nanoseconds: numbers.Real)`
-- `Period(picoseconds: numbers.Real)`
-- `Period(femtoseconds: numbers.Real)`
+- `Period(s: numbers.Real)`
+- `Period(ms: numbers.Real)`
+- `Period(us: numbers.Real)`
+- `Period(ns: numbers.Real)`
+- `Period(ps: numbers.Real)`
+- `Period(fs: numbers.Real)`
   - The argument will be scaled according to its SI prefix and used to calculate the closest integer femtosecond representation.
-- `Period(hertz: numbers.Real)`
-- `Period(kilohertz: numbers.Real)`
-- `Period(megahertz: numbers.Real)`
-- `Period(gigahertz: numbers.Real)`
+- `Period(Hz: numbers.Real)`
+- `Period(kHz: numbers.Real)`
+- `Period(MHz: numbers.Real)`
+- `Period(GHz: numbers.Real)`
   - The argument will be scaled according to its SI prefix and its reciprocal used to calculate the closest integer femtosecond representation.
     A value of zero will raise `ZeroDivisionError`.
 
@@ -136,12 +136,7 @@ None.
 
 - With the scope of `Period` extended beyond simulation, where do we put it?
 
-- Should we use shorter argument/property names like `MHz` instead of (or an alias in addition to) `megahertz`?
-
 - Should we disallow passing a negative frequency or accessing a frequency property on a negative period?
-
-- We could allow passing multiple constructor arguments and add them together -- should we?
-  - Probably not. Limited usefulness for durations and nonsensical for frequencies.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
