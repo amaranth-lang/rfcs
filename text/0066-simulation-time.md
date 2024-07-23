@@ -80,6 +80,18 @@ The following operators are defined:
   - Operators on `Period`s are performed on the underlying femtosecond values.
   - Operators involving `numbers.Real` operands have the result rounded back to the closest integer femtosecond representation.
   - Operators given unsupported operand combinations will return `NotImplemented`.
+- `.__str__() -> str`
+  - Equivalent to `.__format__("")`
+- `.__format__(format_spec: str) -> str`
+  - The format specifier format is `[width][.precision][ ][unit]`.
+  - An invalid format specifier raises `ValueError`.
+  - If `width` is specified, the string is left-padded with space to at least the requested width.
+  - If `precision` is specified, the requested number of decimal digits will be emitted.
+    Otherwise, duration units will emit as many digits required for an exact result, while frequency units will defer to default `float` formatting.
+  - If a space is present in the format specifier, the formatted string will have a space between the number and the unit.
+  - `unit` can be specified as any of the argument names accepted by the constructor.
+    If a unit is not specified, the largest duration unit that has a nonzero integer part is used.
+    Formatting frequency units have the same restrictions and exception behavior as accessing frequency properties.
 
 `SimulatorContext` have an `.elapsed_time() -> Period` method added that returns the elapsed time since start of simulation.
 
