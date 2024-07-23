@@ -38,7 +38,8 @@ It is immutable and has a constructor accepting at most one named argument, givi
 - `Period(MHz: numbers.Real)`
 - `Period(GHz: numbers.Real)`
   - The argument will be scaled according to its SI prefix and its reciprocal used to calculate the closest integer femtosecond representation.
-    A value of zero will raise `ZeroDivisionError`.
+  - A value of zero will raise `ZeroDivisionError`.
+  - A negative value will raise `ValueError`.
 
 To convert it back to a number, the following properties are available:
 - `.seconds -> float`
@@ -54,6 +55,7 @@ To calculate the reciprocal frequency, the following properties are available:
 - `.megahertz -> float`
 - `.gigahertz -> float`
   - Accessing these properties when the period is zero will raise `ZeroDivisionError`.
+  - Accessing these properties when the period is negative will raise `ValueError`.
 
 The following operators are defined:
 - `.__lt__(other: Period) -> bool`
@@ -135,7 +137,7 @@ None.
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Should we disallow passing a negative frequency or accessing a frequency property on a negative period?
+None.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
