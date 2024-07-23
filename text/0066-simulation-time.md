@@ -40,18 +40,18 @@ It is immutable and has a constructor accepting at most one named argument, givi
     A value of zero will raise `ZeroDivisionError`.
 
 To convert it back to a number, the following properties are available:
-- `.seconds -> fractions.Fraction`
-- `.milliseconds -> fractions.Fraction`
-- `.microseconds -> fractions.Fraction`
-- `.nanoseconds -> fractions.Fraction`
-- `.picoseconds -> fractions.Fraction`
+- `.seconds -> float`
+- `.milliseconds -> float`
+- `.microseconds -> float`
+- `.nanoseconds -> float`
+- `.picoseconds -> float`
 - `.femtoseconds -> int`
 
 To calculate the reciprocal frequency, the following properties are available:
-- `.hertz -> fractions.Fraction`
-- `.kilohertz -> fractions.Fraction`
-- `.megahertz -> fractions.Fraction`
-- `.gigahertz -> fractions.Fraction`
+- `.hertz -> float`
+- `.kilohertz -> float`
+- `.megahertz -> float`
+- `.gigahertz -> float`
   - Accessing these properties when the period is zero will raise `ZeroDivisionError`.
 
 The following operators are defined:
@@ -71,7 +71,7 @@ The following operators are defined:
 - `.__mul__(other: numbers.Real) -> Period`
 - `.__rmul__(other: numbers.Real) -> Period`
 - `.__truediv__(other: numbers.Real) -> Period`
-- `.__truediv__(other: Period) -> fractions.Fraction`
+- `.__truediv__(other: Period) -> float`
 - `.__floordiv__(other: Period) -> int`
 - `.__mod__(other: Period) -> Period`
   - Operators on `Period`s are performed on the underlying femtosecond values.
@@ -108,12 +108,6 @@ Consequently, `Platform.default_clk_frequency()` is also deprecated and replaced
 
 - Accepting a `numbers.Real` when we're converting from a number lets us pass in any standard suitable number type.
 
-- When converting to a number, `fractions.Fraction` is a standard `numbers.Real` type that is guaranteed to represent any possible value exactly, and is convertible to `int` or `float`.
-  - Returning `int` would force a potentially undesirable truncation/rounding upon the user.
-  - Returning `float` would lose precision when the number of femtoseconds are larger than the significand.
-  - `decimal.Decimal` is decimal floating point and thus has the same issue as `float`.
-  - `.femtoseconds` returns `int` because that's a perfect representation and returning a fraction with a denominator of 1 adds no value.
-
 - The supported set of operators are the ones that have meaningful and useful semantics:
   - Comparing, adding and subtracting time periods makes sense.
   - Multiplying a time period with or dividing it by a real number scales the time period.
@@ -126,6 +120,11 @@ Consequently, `Platform.default_clk_frequency()` is also deprecated and replaced
 
 - Instead of named constructor arguments, we could use a classmethod for each SI prefix.
   This was proposed in an earlier revision of this RFC.
+
+- Instead of returning `float`, we could return `fractions.Fraction` to ensure no precision loss when the number of femtoseconds is larger than the `float` significand.
+  This was proposed in an earlier revision of this RFC.
+  - Rounding to integer femtoseconds is already lossy and a further precision loss from converting to a `float` is negligible in most real world use cases.
+    For any applications requiring an exact conversion of a `Period`, the `.femtoseconds` property is always exact.
 
 ## Prior art
 [prior-art]: #prior-art
