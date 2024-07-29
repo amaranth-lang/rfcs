@@ -1,6 +1,6 @@
-- Start Date: (fill in with date at which the RFC is merged, YYYY-MM-DD)
+- Start Date: 2024-07-29
 - RFC PR: [amaranth-lang/rfcs#66](https://github.com/amaranth-lang/rfcs/pull/66)
-- Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
+- Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/1469)
 
 # Simulation time
 
