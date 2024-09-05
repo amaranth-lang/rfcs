@@ -124,7 +124,7 @@ In addition, the existing `Mux` expression is made valid on the left-hand side o
 
 ```py
 def Mux(sel, val1, val0):
-    return Choice(a).case(0, val0).default(val1)
+    return Choice(sel).case(0, val0).default(val1)
 ```
 
 `ArrayProxy` (ie. the type currently returned by `Array` indexing) is changed from a native `Value` to a `ValueCastable` that lowers to `Choice` (removing the odd case where we can currently build an invaid `Value`). To avoid problems with lowering the out-of-bounds case, the value returned for out-of-bounds `Array` accesses is changed to 0.
