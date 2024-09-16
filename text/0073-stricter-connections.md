@@ -39,8 +39,8 @@ Currently, `lib.data.View.eq()` does no checks on the passed value and immediate
 (eq (sig a) (sig b))
 ```
 
-This RFC proposes adding a check to `View.eq()` that would reject direct assignments from another `View` with a non-identical layout.
-If such an assignment is desired, the other `View` can be explicitly passed through `Value.cast()` first.
+This RFC proposes adding a check to `View.eq()` that would reject direct assignments from another aggregate data structure with a non-identical layout.
+If such an assignment is desired, the other aggregate data structure can be explicitly passed through `Value.cast()` first.
 
 Currently `lib.wiring.connect()` passes every signal through `Value.cast()` before assigning them.
 This results in a `ValueCastable`'s `.eq()` not being called, and thereby bypassing the check proposed above.
@@ -51,8 +51,9 @@ This RFC proposes removing the `Value.cast()` so a `ValueCastable`'s `.eq()` wil
 [reference-level-explanation]: #reference-level-explanation
 
 Modify `lib.data.View.eq(other)` to add the following checks:
-- If `other` is a `View`, reject the assignment if layouts are not identical.
-- Otherwise, if `other` is another `ValueCastable`, reject the assignment.
+- If `other` is a `ValueCastable`, do `Layout.cast(other.shape())`
+  - If a valid `Layout` is returned, reject the assignment if it doesn't match `self.shape()`.
+  - If `Layout.cast()` raises, reject the assignment.
 - Otherwise, proceed as normal.
 
 Modify `lib.wiring.connect()` to not pass port members through `Value.cast()`, so that a `ValueCastable`'s `.eq()` will be called, allowing it to perform compatibility checks.
