@@ -47,8 +47,13 @@ This results in a `ValueCastable`'s `.eq()` not being called, and thereby bypass
 
 This RFC proposes removing the `Value.cast()` so a `ValueCastable`'s `.eq()` will be called directly.
 
+This RFC proposes updating `lib.enum.EnumView` in the same manner, for the same reason, as `lib.data.View`.
+
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+Modify `lib.wiring.connect()` to not pass port members through `Value.cast()`, so that a `ValueCastable`'s `.eq()` will be called, allowing it to perform compatibility checks.
+- If a `ValueCastable` doesn't define `.eq()`, reject the assignment.
 
 Modify `lib.data.View.eq(other)` to add the following checks:
 - If `other` is a `ValueCastable`, do `Layout.cast(other.shape())`
@@ -56,8 +61,10 @@ Modify `lib.data.View.eq(other)` to add the following checks:
   - If `Layout.cast()` raises, reject the assignment.
 - Otherwise, proceed as normal.
 
-Modify `lib.wiring.connect()` to not pass port members through `Value.cast()`, so that a `ValueCastable`'s `.eq()` will be called, allowing it to perform compatibility checks.
-- If a `ValueCastable` doesn't define `.eq()`, reject the assignment.
+Modify `lib.enum.EnumView.eq(other)` to add the following checks:
+- If `other` is an `EnumView`, reject the assignment if enum types are not identical.
+- Otherwise, if `other` is another `ValueCastable`, reject the assignment.
+- Otherwise, proceed as normal.
 
 Rejected assignments are a warning in Amaranth 0.6 and becomes a hard error in Amaranth 0.7.
 
