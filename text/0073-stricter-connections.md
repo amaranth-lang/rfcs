@@ -1,6 +1,6 @@
-- Start Date: (fill in with date at which the RFC is merged, YYYY-MM-DD)
+- Start Date: 2024-09-16
 - RFC PR: [amaranth-lang/rfcs#73](https://github.com/amaranth-lang/rfcs/pull/73)
-- Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
+- Amaranth Issue: [amaranth-lang/amaranth#1511](https://github.com/amaranth-lang/amaranth/issues/1511)
 
 # Stricter connections
 
@@ -62,14 +62,15 @@ Modify `lib.data.View.eq(other)` to add the following checks:
 - Otherwise, proceed as normal.
 
 Modify `lib.enum.EnumView.eq(other)` to add the following checks:
-- If `other` is an `EnumView`, reject the assignment if enum types are not identical.
-- Otherwise, if `other` is another `ValueCastable`, reject the assignment.
+- If `other` is a `ValueCastable`, reject the assignment if `other.shape()` doesn't match `self.shape()`.
 - Otherwise, proceed as normal.
 
 Rejected assignments are a warning in Amaranth 0.6 and becomes a hard error in Amaranth 0.7.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
+
+- Increased language complexity.
 
 - This will add an implied requirement for a `ValueCastable` to implement `.eq()` to be usable with `lib.wiring`. Currently a `ValueCastable` is not required to implement `.eq()` at all.
   - We could fall back to `Value.cast().eq()` when `.eq()` is not defined.
@@ -91,7 +92,7 @@ Rejected assignments are a warning in Amaranth 0.6 and becomes a hard error in A
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None (yet).
+None.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
