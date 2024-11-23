@@ -15,7 +15,7 @@ Add fixed point types to Amaranth.
 Fractional values in hardware are usually represented as some form of fixed point value.
 Without a first class fixed point type, the user has to manually manage how the value needs to be shifted to be represented as an integer and keep track of how that interacts with arithmetic operations.
 
-A fixed point type would encode and keep track of the precision through arithmetic operations, as well as provide standard operations for converting values to and from fixed point representations with correct rounding.
+A fixed point type would encode and keep track of the precision through arithmetic operations, as well as provide standard operations for converting values to and from fixed point representations.
 
 ## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -58,11 +58,10 @@ The following operations are defined on it:
 - `.eq(value)`: Assign `value`.
   - If `value` is a `Value`, it'll be assigned directly to the underlying `Value`.
   - If `value` is an `int` or `float`, it'll be cast to a `fixed.Const` first.
-  - If `value` is a `fixed.Value`, the precision will be extended or rounded as required.
-- `.round(f_bits=0)`: Return a new `fixed.Value` with precision changed to `f_bits`, rounding as required.
-  - Rounding strategy: round to nearest with ties rounded towards positive infinity.
-  - Under the hood, this involves truncating and adding the most significant truncated bit.
-- `.truncate(f_bits=0)`: Return a new `fixed.Value` with precision changed to `f_bits`, truncating as required.
+  - If `value` is a `fixed.Value`, the precision will be extended or truncated as required.
+- `.reshape(f_bits)`: Return a new `fixed.Value` with `f_bits` fractional bits, truncating or extending precision as required.
+- `.reshape(shape)`: Return a new `fixed.Value` with shape `shape`, truncating or extending precision as required.
+  - For example, `value1.reshape(SQ(4, 4))` * value2
 - `.__add__(other)`, `.__radd__(other)`, `.__sub__(other)`, `.__rsub__(other)`, `.__mul__(other)`, `.__rmul__(other)`: Binary arithmetic operators.
   - If `other` is a `Value`, it'll be cast to a `fixed.Value` first.
   - If `other` is an `int`, it'll be cast to a `fixed.Const` first.
@@ -73,8 +72,8 @@ The following operations are defined on it:
 - `.__neg__()`, `.__pos__()`, `.__abs__()`: Unary arithmetic operators.
 - `.__lt__(other)`, `.__le__(other)`, `.__eq__(other)`, `.__ne__(other)`, `.__gt__(other)`, `.__ge__(other)`: Comparison operators.
     - Comparisons between `fixed.Value` of matching size, or between `fixed.Value` and `int` are permitted.
-    - Comparisons between `fixed.Value` of different widths are not permitted.
-        - Users are guided by an exception to explicitly `truncate()` or `round()` as needed.
+    - Comparisons between `fixed.Value` of different `f_bits` are not permitted.
+        - Users are guided by an exception to explicitly `reshape()` as needed.
     - Comparisons between `fixed.Value` and `float` are not permitted.
         - Users are guided by an exception to explicitly convert using `fixed.Const` as needed.
 
@@ -86,7 +85,7 @@ The following additional operations are defined on it:
 - `fixed.Const(value, shape=None, clamp=False)`: Create a `fixed.Const` from `value`. `shape` must be a `fixed.Shape` if specified.
   - If `value` is an `int` and `shape` is not specified, the smallest shape that will fit `value` will be selected.
   - If `value` is a `float` and `shape` is not specified, the smallest shape that gives a perfect representation will be selected.
-    If `shape` is specified, `value` will be rounded to the closest representable value first.
+    If `shape` is specified, `value` will be truncated to the closest representable value first.
   - If `shape` is specified and `value` is too large to be represented by that shape, an exception is thrown.
     - The exception invites the user to try `clamp=True` to squash this exception, instead clamping the constant to the maximum / minimum value representable by the provided `shape`.
 - `.as_integer_ratio()`: Return the value represented as an integer ratio `tuple`.
@@ -124,7 +123,7 @@ TBD
 
 - What should we do if a `float` is passed as `other` to an arithmetic operation?
   - We could use `float.as_integer_ratio()` to derive a perfect fixed point representation.
-    However, since a Python `float` is double precision, this means it's easy to make a >50 bit number by accident by doing something like `value * (1 / 3)`, and even if the result is rounded or truncated afterwards, the lower bits can affect rounding and thus won't be optimized out in synthesis.
+    However, since a Python `float` is double precision, this means it's easy to make a >50 bit number by accident by doing something like `value * (1 / 3)`, and even if the result is truncated afterwards, the lower bits can affect rounding and thus won't be optimized out in synthesis.
   - We could use the same width for `other` as for `self`, adjusted to the appropriate exponent for the value.
   - We could outright reject it, requiring the user to explicitly specify precision like e.g. `value * Q(15).const(1 / 3)`.
   - vk2seb@: I would lean toward outright rejecting this, with an explicit cast necessary (now reflected above).
@@ -135,7 +134,10 @@ TBD
   - IEEE 754 defaults to round to nearest, ties to even, which is more expensive to implement.
   - Should we make it user selectable?
     - We still need a default mode used when a higher precision number is passed to `.eq()`.
-  - vk2seb@: Both truncation and simple rounding (round to nearest) are commonly used in DSP algorithms. For now, we provide only `truncate()` and `round()` strategies (now reflected above). Additional rounding strategies may be added in a future RFC, however we will always need a default rounding strategy.
+  - samimia-swks@: In most DSP applications, simple truncating is done (bit picking, which is equivalent to a floor()) because it's free. I would vote for that being the default behavior at least.
+  - ld-cd@: (...) Truncate is still a reasonable default for most applications.
+  - ld-cd@: (...) I think a better approach would be to leave rounding and several other common operations that require platform dependent lowering to a subsequent RFC (...).
+  - vk2seb@: Both truncation and simple rounding (round to nearest) are commonly used in DSP algorithms. For now, we provide only `reshape()` (truncation, now reflected above). Additional rounding strategies may be added in a future RFC, however we will always need a default rounding strategy, and truncation seems like a sane default.
 
 - Are there any other operations that would be good to have?
   - From ld-cd@: `min()`, `max()` on `fixed.Shape` (vk2seb@: agree, heavily use this)
@@ -163,9 +165,7 @@ TBD
   - vk2seb@: The existing modifications address this:
     - Library name: `lib.fixed`
     - Type names and shapes: signature has now been updated to use `i_bits`, `f_bits` and the explicit underlying storage in the constructor for `fixed.Shape`.
-    - We now have both `.round()` and `.truncate()`. I don't think using the same name for increasing and decreasing precision is so bad. But if you feel strongly about this we may consider:
-        - Renaming them.
-        - Disallowing increasing precision with these methods, and add a new method for precision extension .
+    - We now have `.reshape()`, which better represents increasing and decreasing precision. However, I'm open to new names.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
