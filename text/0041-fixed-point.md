@@ -74,10 +74,12 @@ The following operations are defined on it:
 `fixed.Const` is a `fixed.Value` subclass.
 The following additional operations are defined on it:
 
-- `fixed.Const(value, shape=None)`: Create a `fixed.Const` from `value`. `shape` must be a `fixed.Shape` if specified.
+- `fixed.Const(value, shape=None, clamp=False)`: Create a `fixed.Const` from `value`. `shape` must be a `fixed.Shape` if specified.
   - If `value` is an `int` and `shape` is not specified, the smallest shape that will fit `value` will be selected.
   - If `value` is a `float` and `shape` is not specified, the smallest shape that gives a perfect representation will be selected.
     If `shape` is specified, `value` will be rounded to the closest representable value first.
+  - If `shape` is specified and `value` is too large to be represented by that shape, an exception is thrown.
+    - The exception invites the user to try `clamp=True` to squash this exception, instead clamping the constant to the maximum / minimum value representable by the provided `shape`.
 - `.as_integer_ratio()`: Return the value represented as an integer ratio `tuple`.
 - `.as_float()`: Return the value represented as a `float`.
 - Operators are extended to return a `fixed.Const` if all operands are constant.
