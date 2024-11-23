@@ -37,7 +37,6 @@ The following operations are defined on it:
 - A `fixed.Shape` may be constructed using the following aliases:
     - `SQ(i_bits, f_bits)` is an alias for `fixed.Shape(signed(i_bits + f_bits), f_bits)`.
     - `UQ(i_bits, f_bits)` is an alias for `fixed.Shape(unsigned(i_bits + f_bits), f_bits)`.
-- `fixed.Shape.cast(shape, f_bits=0)`: Cast `shape` to a `fixed.Shape` instance.
 - `.i_bits`, `.f_bits`, `.signed`: Width and signedness properties of the `fixed.Shape`.
     - `.i_bits` includes the sign bit. That is, for `fixed.Shape(signed(16), 12)`, `.i_bits == 4`.
 - `.const(value)`: Create a `fixed.Const` from `value`.
@@ -67,7 +66,7 @@ The following operations are defined on it:
 - `.__add__(other)`, `.__radd__(other)`, `.__sub__(other)`, `.__rsub__(other)`, `.__mul__(other)`, `.__rmul__(other)`: Binary arithmetic operators.
   - If `other` is a `Value`, it'll be cast to a `fixed.Value` first.
   - If `other` is an `int`, it'll be cast to a `fixed.Const` first.
-  - If `other` is a `float`: TBD
+  - If `other` is a `float`, this is not permitted. The `float` must be explicitly cast to `fixed.Const`.
   - The result will be a new `fixed.Value` with enough precision to hold any resulting value without rounding or overflowing.
 - `.__lshift__(other)`, `.__rshift__(other)`: Bit shift operators.
     - `other` only accepts integral types. For example, shifting by a `float` or `fixed.Value` is not permitted.
@@ -128,6 +127,7 @@ TBD
     However, since a Python `float` is double precision, this means it's easy to make a >50 bit number by accident by doing something like `value * (1 / 3)`, and even if the result is rounded or truncated afterwards, the lower bits can affect rounding and thus won't be optimized out in synthesis.
   - We could use the same width for `other` as for `self`, adjusted to the appropriate exponent for the value.
   - We could outright reject it, requiring the user to explicitly specify precision like e.g. `value * Q(15).const(1 / 3)`.
+  - vk2seb@: I would lean toward outright rejecting this, with an explicit cast necessary (now reflected above).
 
 - How should we handle rounding?
   - Truncating and adding the most significant truncated bit is cheap and is effectively round to nearest with ties rounded towards positive infinity.
@@ -135,15 +135,21 @@ TBD
   - IEEE 754 defaults to round to nearest, ties to even, which is more expensive to implement.
   - Should we make it user selectable?
     - We still need a default mode used when a higher precision number is passed to `.eq()`.
+  - vk2seb@: Both truncation and simple rounding (round to nearest) are commonly used in DSP algorithms. For now, we provide only `truncate()` and `round()` strategies (now reflected above). Additional rounding strategies may be added in a future RFC, however we will always need a default rounding strategy.
 
 - Are there any other operations that would be good to have?
+  - From ld-cd@: `min()`, `max()` on `fixed.Shape` (vk2seb@: agree, heavily use this)
+  - From ld-cd@: `numerator()` as a signedness-preserving `as_value()` (vk2seb@: agree, heavily use this)
+  - vk2seb@: Let's add both of these operations (now reflected above)
 
 - Are there any operations that would be good to *not* have?
   - This API (`fixed.Shape.cast()`) seems confusing and difficult to use. Should we expose it at all? (@whitequark)
+  - vk2seb@: It can survive as a building block but I don't see why it needs to be exposed. Propose removal (reflected above).
 
 - `Decimal` and/or `Fraction` support?
   - This could make sense to have, but both can represent values that's not representable as binary fixed point.
     On the other hand, a Python `float` can perfectly represent any fixed point value up to a total width of 53 bits and any `float` value is perfectly representable as fixed point.
+  - vk2seb@: As both can represent values that aren't representable as binary fixed point, I don't see a huge benefit. I also can't immediately think of an application that would need >53 bit constants. I would propose for now we leave `Decimal` and `Fraction` out of scope of this RFC.
 
 - Name all the things.
   - Library name:
@@ -154,6 +160,12 @@ TBD
     - `.int_bits`, `.frac_bits`?
     - cursed option: `int, frac = x.width`?
   - `.round()` is a bit awkwardly named when it's used both to increase and decrease precision.
+  - vk2seb@: The existing modifications address this:
+    - Library name: `lib.fixed`
+    - Type names and shapes: signature has now been updated to use `i_bits`, `f_bits` and the explicit underlying storage in the constructor for `fixed.Shape`.
+    - We now have both `.round()` and `.truncate()`. I don't think using the same name for increasing and decreasing precision is so bad. But if you feel strongly about this we may consider:
+        - Renaming them.
+        - Disallowing increasing precision with these methods, and add a new method for precision extension .
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
