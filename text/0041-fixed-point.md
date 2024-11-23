@@ -110,8 +110,8 @@ TBD
 
 - There's two slightly different [Q notation](https://en.wikipedia.org/wiki/Q_(number_format)) definitions, namely whether the bit counts includes the sign bit or not.
     - Not having the sign bit included seems more common, and has the advantage that a number has the same fractional precision whether `i_bits` is 0 or not.
-    - Having the sign bit included is the dominant notation in the audio ASIC world (citation needed, comment from samimia-swks@). As of now, this RFC uses this notation as it is also a little simpler to reason about the size of underlying storage on constructing an `SQ`.
     - While Q notation names the signed type `Q`, it's more consistent for Amaranth to use `SQ` since other Amaranth types defaults to unsigned.
+    - vk2seb@: Having the sign bit included is the dominant notation in the audio ASIC world (citation needed, comment from samimia-swks@). As of now, this RFC uses this notation as it is also a little simpler to reason about the size of underlying storage on constructing an `SQ`.
 
 ## Prior art
 [prior-art]: #prior-art
