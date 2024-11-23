@@ -69,8 +69,14 @@ The following operations are defined on it:
   - If `other` is a `float`: TBD
   - The result will be a new `fixed.Value` with enough precision to hold any resulting value without rounding or overflowing.
 - `.__lshift__(other)`, `.__rshift__(other)`: Bit shift operators.
+    - `other` only accepts integral types. For example, shifting by a `float` or `fixed.Value` is not permitted.
 - `.__neg__()`, `.__pos__()`, `.__abs__()`: Unary arithmetic operators.
 - `.__lt__(other)`, `.__le__(other)`, `.__eq__(other)`, `.__ne__(other)`, `.__gt__(other)`, `.__ge__(other)`: Comparison operators.
+    - Comparisons between `fixed.Value` of matching size, or between `fixed.Value` and `int` are permitted.
+    - Comparisons between `fixed.Value` of different widths are not permitted.
+        - Users are guided by an exception to explicitly `truncate()` or `round()` as needed.
+    - Comparisons between `fixed.Value` and `float` are not permitted.
+        - Users are guided by an exception to explicitly convert using `fixed.Const` as needed.
 
 ### `fixed.Const`
 
