@@ -60,6 +60,9 @@ The following operations are defined on it:
   - If `value` is an `int` or `float`, it'll be cast to a `fixed.Const` first.
   - If `value` is a `fixed.Value`, the precision will be extended or rounded as required.
 - `.round(f_bits=0)`: Return a new `fixed.Value` with precision changed to `f_bits`, rounding as required.
+  - Rounding strategy: round to nearest with ties rounded towards positive infinity.
+  - Under the hood, this involves truncating and adding the most significant truncated bit.
+- `.truncate(f_bits=0)`: Return a new `fixed.Value` with precision changed to `f_bits`, truncating as required.
 - `.__add__(other)`, `.__radd__(other)`, `.__sub__(other)`, `.__rsub__(other)`, `.__mul__(other)`, `.__rmul__(other)`: Binary arithmetic operators.
   - If `other` is a `Value`, it'll be cast to a `fixed.Value` first.
   - If `other` is an `int`, it'll be cast to a `fixed.Const` first.
