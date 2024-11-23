@@ -55,6 +55,7 @@ The following operations are defined on it:
 - `.i_bits`, `.f_bits`, `.signed`: Width and signedness properties.
 - `.shape()`: Return the `fixed.Shape` this was created from.
 - `.as_value()`: Return the underlying value.
+- `.numerator()`: Return `as_value()` cast to the appropriate signedness.
 - `.eq(value)`: Assign `value`.
   - If `value` is a `Value`, it'll be assigned directly to the underlying `Value`.
   - If `value` is an `int` or `float`, it'll be cast to a `fixed.Const` first.
