@@ -164,8 +164,12 @@ TBD
   - `.round()` is a bit awkwardly named when it's used both to increase and decrease precision.
   - vk2seb@: The existing modifications address this:
     - Library name: `lib.fixed`
-    - Type names and shapes: signature has now been updated to use `i_bits`, `f_bits` and the explicit underlying storage in the constructor for `fixed.Shape`.
+    - Type names and shapes (from zyp@): signature has now been updated to use `i_bits`, `f_bits` and the explicit underlying storage in the constructor for `fixed.Shape`.
     - We now have `.reshape()`, which better represents increasing and decreasing precision. However, I'm open to new names.
+
+- Should `__div__` be permitted?
+    - zyp@: (...) To avoid scope creep, I'm inclined to leave inferred division out of this RFC. We could instead do a separate RFC later for that.
+    - vk2seb@: agree, let's leave it out of this RFC.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
