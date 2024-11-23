@@ -43,6 +43,7 @@ The following operations are defined on it:
 - `.const(value)`: Create a `fixed.Const` from `value`.
 - `.as_shape()`: Return the underlying `Shape`.
 - `.__call__(target)`: Create a `fixed.Value` over `target`.
+- `min()`, `max()`: Returns a `fixed.Const` representing the minimum and maximum representable values of a shape.
 
 ### `fixed.Value`
 
