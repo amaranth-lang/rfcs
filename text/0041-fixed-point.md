@@ -27,35 +27,38 @@ TODO
 
 This RFC proposes a library addition `amaranth.lib.fixed` with the following contents:
 
+### `fixed.Shape`
+
 `fixed.Shape` is a `ShapeCastable` subclass.
 The following operations are defined on it:
 
-- `fixed.Shape(f_width, /, *, signed)`: Create a `fixed.Shape` with zero integer bits and `f_width` fractional bits.
-- `fixed.Shape(i_width, f_width, /, *, signed)`: Create a `fixed.Shape` with `i_width` integer bits and `f_width` fractional bits.
-  - The sign bit is not included in `i_width` or `f_width`, so a `fixed.Shape(7, 8, signed=True)` will be 16 bits wide.
-- `fixed.Shape.cast(shape, f_width=0)`: Cast `shape` to a `fixed.Shape` instance.
-- `.i_width`, `.f_width`, `.signed`: Width and signedness properties.
+- `fixed.Shape(shape, f_bits)`: Create a `fixed.Shape` with underlying storage `shape` and `f_bits` fractional bits.
+- The signedness is inherited from `shape`, so a `fixed.Shape(signed(16), 12)` would be a signed fixed-point number, 16 bits wide with 12 fractional bits.
+- A `fixed.Shape` may be constructed using the following aliases:
+    - `SQ(i_bits, f_bits)` is an alias for `fixed.Shape(signed(i_bits + f_bits), f_bits)`.
+    - `UQ(i_bits, f_bits)` is an alias for `fixed.Shape(unsigned(i_bits + f_bits), f_bits)`.
+- `fixed.Shape.cast(shape, f_bits=0)`: Cast `shape` to a `fixed.Shape` instance.
+- `.i_bits`, `.f_bits`, `.signed`: Width and signedness properties of the `fixed.Shape`.
+    - `.i_bits` includes the sign bit. That is, for `fixed.Shape(signed(16), 12)`, `.i_bits == 4`.
 - `.const(value)`: Create a `fixed.Const` from `value`.
 - `.as_shape()`: Return the underlying `Shape`.
 - `.__call__(target)`: Create a `fixed.Value` over `target`.
 
-`SQ(*args)` is an alias for `fixed.Shape(*args, signed=True)`.
-
-`UQ(*args)` is an alias for `fixed.Shape(*args, signed=False)`.
+### `fixed.Value`
 
 `fixed.Value` is a `ValueCastable` subclass.
 The following operations are defined on it:
 
 - `fixed.Value(shape, target)`: Create a `fixed.Value` with `shape` over `target`.
-- `fixed.Value.cast(value, f_width=0)`: Cast `value` to a `fixed.Value`.
-- `.i_width`, `.f_width`, `.signed`: Width and signedness properties.
+- `fixed.Value.cast(value, f_bits=0)`: Cast `value` to a `fixed.Value`.
+- `.i_bits`, `.f_bits`, `.signed`: Width and signedness properties.
 - `.shape()`: Return the `fixed.Shape` this was created from.
 - `.as_value()`: Return the underlying value.
 - `.eq(value)`: Assign `value`.
   - If `value` is a `Value`, it'll be assigned directly to the underlying `Value`.
   - If `value` is an `int` or `float`, it'll be cast to a `fixed.Const` first.
   - If `value` is a `fixed.Value`, the precision will be extended or rounded as required.
-- `.round(f_width=0)`: Return a new `fixed.Value` with precision changed to `f_width`, rounding as required.
+- `.round(f_bits=0)`: Return a new `fixed.Value` with precision changed to `f_bits`, rounding as required.
 - `.__add__(other)`, `.__radd__(other)`, `.__sub__(other)`, `.__rsub__(other)`, `.__mul__(other)`, `.__rmul__(other)`: Binary arithmetic operators.
   - If `other` is a `Value`, it'll be cast to a `fixed.Value` first.
   - If `other` is an `int`, it'll be cast to a `fixed.Const` first.
@@ -64,6 +67,8 @@ The following operations are defined on it:
 - `.__lshift__(other)`, `.__rshift__(other)`: Bit shift operators.
 - `.__neg__()`, `.__pos__()`, `.__abs__()`: Unary arithmetic operators.
 - `.__lt__(other)`, `.__le__(other)`, `.__eq__(other)`, `.__ne__(other)`, `.__gt__(other)`, `.__ge__(other)`: Comparison operators.
+
+### `fixed.Const`
 
 `fixed.Const` is a `fixed.Value` subclass.
 The following additional operations are defined on it:
@@ -93,9 +98,9 @@ TBD
   Multiplying an integer with a fixedpoint constant and rounding the result back to an integer is a reasonable and likely common thing to want to do.
 
 - There's two slightly different [Q notation](https://en.wikipedia.org/wiki/Q_(number_format)) definitions, namely whether the bit counts includes the sign bit or not.
-  Not having the sign bit included seems more common, and has the advantage that a number has the same fractional precision whether `i_width` is 0 or not.
-
-- While Q notation names the signed type `Q`, it's more consistent for Amaranth to use `SQ` since other Amaranth types defaults to unsigned.
+    - Not having the sign bit included seems more common, and has the advantage that a number has the same fractional precision whether `i_bits` is 0 or not.
+    - Having the sign bit included is the dominant notation in the audio ASIC world (citation needed, comment from samimia-swks@). As of now, this RFC uses this notation as it is also a little simpler to reason about the size of underlying storage on constructing an `SQ`.
+    - While Q notation names the signed type `Q`, it's more consistent for Amaranth to use `SQ` since other Amaranth types defaults to unsigned.
 
 ## Prior art
 [prior-art]: #prior-art
