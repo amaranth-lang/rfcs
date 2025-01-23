@@ -1,5 +1,5 @@
 - Start Date: (fill in with date at which the RFC is merged, YYYY-MM-DD)
-- RFC PR: [amaranth-lang/rfcs#0000](https://github.com/amaranth-lang/rfcs/pull/0000)
+- RFC PR: [amaranth-lang/rfcs#0074](https://github.com/amaranth-lang/rfcs/pull/0074)
 - Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
 
 # Structured VCD Output
