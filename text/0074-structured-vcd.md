@@ -94,7 +94,7 @@ We propose the following conventions:
 - The `vhdl_array` scope defines a group of signals belonging to an array (such as a signal with `ArrayLayout`)
 - The `vhdl_record` scope defines a structured group of signals (such as a signal with `StructLayout`)
 
-> **NOTE**: (Implementation goes here)
+> **NOTE**: (Implementation details pending)
 > ...
 
 
@@ -189,7 +189,10 @@ $upscope $end
 - The choice of `scope vhdl_array` and `scope vhdl_record` are suggested due to known compatibility with Surfer and GTKWave.
   However, note that these are not part of the VCD specification (which is somewhat old and under-defined).
 
-- One alternative would be to include support for a different waveform format that has better-defined support for variables with composite datatypes.
+### Alternatives
+
+- Expose an environment variable (or a parameter in `write_vcd()`) allowing users to opt-in/opt-out of structured VCD output
+- Include support for a different waveform format that has better-defined support for variables with composite datatypes.
 
 ## Prior art
 [prior-art]: #prior-art
@@ -204,9 +207,13 @@ $upscope $end
 - Should we continue to include the "flattened" [pure bit-vector] representation of aggregate signals in the VCD?
 - Does this feature need to be gated/opt-in by default?
 
+- The simulator currently depends on [westerndigitalcorporation/pyvcd](https://github.com/westerndigitalcorporation/pyvcd) when writing VCD files.
+  However, `pyvcd` only emits scope types defined by the VCD specification (and does not include the `vhdl_record`/`vhdl_array` scopes).
+  When implementing this RFC, should we continue relying on `pyvcd`, or does this warrant the addition of our own code in the simulator for writing VCD files?
+
 ## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Since this adds more overhead to VCD output, it's worth mentioning that VCD may be unsuitable for testing very large designs.
-This RFC may be a stepping stone to considering support for alternative waveform formats in the future.
+This RFC can also serve as a stepping stone for supporting alternative waveform formats in the future.
 
