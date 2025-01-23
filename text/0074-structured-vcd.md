@@ -83,6 +83,30 @@ $scope module top $end                    # top
 $upscope $end
 ```
 
+These images demonstrate the difference in GTKWave output:
+
+<figure>
+  <img align="center" src="./0074-structured-vcd/gtkwave_pre_rfc.png" alt="a screenshot of array-like signals in GTKWave (current behavior)">
+  <figcaption><i>Figure 1. A screenshot of array-like signals in GTKWave (current behavior)</i></figcaption>
+</figure>
+
+<figure>
+<img align="center" src="./0074-structured-vcd/gtkwave_post_rfc.png" alt="a screenshot of array-like signals in GTKWave (proposed behavior)">
+  <figcaption><i>Figure 2. A screenshot of array-like signals in GTKWave (proposed behavior)</i></figcaption>
+</figure>
+
+... and the difference in Surfer output:
+
+<figure>
+  <img align="center" src="./0074-structured-vcd/surfer_pre_rfc.png" alt="a screenshot of array-like signals in Surfer (current behavior)">
+  <figcaption><i>Figure 3. A screenshot of array-like signals in Surfer (current behavior)</i></figcaption>
+</figure>
+
+<figure>
+<img align="center" src="./0074-structured-vcd/surfer_post_rfc.png" alt="a screenshot of array-like signals in Surfer (proposed behavior)">
+  <figcaption><i>Figure 4. A screenshot of array-like signals in Surfer (proposed behavior)</i></figcaption>
+</figure>
+
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
