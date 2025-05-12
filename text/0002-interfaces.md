@@ -515,7 +515,7 @@ To this end, a class `amaranth.lib.wiring.Component` is introduced:
   - I mean, "compatible" could mean that two signatures could be connected together. when checking if an object is compliant to a signature, directions also matters (@zyp)
   - `Signature.complies_with` reverses subject and object (@zyp)
   - `Signature.is_implemented_by` is verbose (@jfng)
-- Should `amaranth.lib.wiring.forward` be named something else, like `amaranth.lib.wiring.forwarded` or `amaranth.lib.wiring.forwarding` or `amaranth.lib.wiring.flip` or `amaranth.lib.wiring.transpose` or ``amaranth.lib.wiring.transpose` or `amaranth.lib.wiring.inner`?
+- Should `amaranth.lib.wiring.forward` be named something else, like `amaranth.lib.wiring.forwarded` or `amaranth.lib.wiring.forwarding` or `amaranth.lib.wiring.flip` or `amaranth.lib.wiring.transpose` or `amaranth.lib.wiring.transpose` or `amaranth.lib.wiring.inner`?
   - having two essentially unrelated operations called `flip` when one is already confusing is too much (@whitequark)
   - reflective programming is a thing (@zyp)
   - inner(inner(interface)) to flip it back to the original wouldn't make much sense (@zyp)
