@@ -123,10 +123,11 @@ We propose the following conventions:
 
 After these changes, this functionality will be enabled by default in the VCD writer.
 These changes will **not** be backported to Amaranth 0.5.x.
-Users that require compatibility with the pre-RFC behavior are expected to either:
+Some users may require compatibility with output that is closer to the actual VCD specification.
+In this case, users that need the pre-RFC behavior are expected to either:
 
-- Opt-out on a case-by-case basis by passing arguments to `write_vcd()` (ie. `structured=False`)
-- Opt-out globally by setting an environment variable (ie. `AMARANTH_FLAT_VCD=1`)
+- Opt-out on a case-by-case basis by passing arguments to `write_vcd()` (ie. `pure=True`)
+- Opt-out globally by setting an environment variable (ie. `AMARANTH_PURE_VCD=1`)
 
 ### Changes to `pyvcd`
 
