@@ -112,17 +112,34 @@ These images demonstrate the difference in GTKWave output:
 
 Currently, Amaranth represents aggregate signals in the VCD by appending the names of elements/members to the name of the signal.
 When simulator output is written to a VCD file, we intend that signals with aggregate datatypes are explicitly given their own scope and split into multiple VCD variables.
+
+### Changes to VCD Writing
+
 We propose the following conventions:
 
 - The `module` scope defines a group of signals belonging to the same `Module`
 - The `vhdl_array` scope defines a group of signals belonging to an array (such as a signal with `ArrayLayout`)
-- The `vhdl_record` scope defines a structured group of signals (such as a signal with `StructLayout`)
+- The `vhdl_record` scope defines a structured group of signals (such as a signal with `StructLayout`, `UnionLayout`, or `FlexibleLayout`)
 
-> **NOTE**: (Implementation details pending)
-> ...
+After these changes, this functionality will be enabled by default in the VCD writer.
+These changes will **not** be backported to Amaranth 0.5.x.
+Users that require compatibility with the pre-RFC behavior are expected to either:
 
+- Opt-out on a case-by-case basis by passing arguments to `write_vcd()` (ie. `structured=False`)
+- Opt-out globally by setting an environment variable (ie. `AMARANTH_FLAT_VCD=1`)
 
-### Expected Output: Array-like
+### Changes to `pyvcd`
+
+The VCD writer in Amaranth depends on `pyvcd`, which represents VCD scopes with a `ScopeType` enum.
+`vhdl_record` and `vhdl_array` variants are required to implement this RFC.
+
+### Changes to Amaranth Playground
+
+The Amaranth Playground has a waveform viewer that depends on the [`d3-wave`](https://github.com/Nic30/d3-wave) library.
+`d3-wave` has an exported/extensible `RowRendererBits` class that can be used to implement renderers for particular datatypes.
+Custom renderers for aggregate datatypes are required for rendering grouped signals in the Amaranth Playground.
+
+### Expected VCD Output: Array-like
 
 ```python
 from amaranth import *
@@ -143,7 +160,7 @@ $scope vhdl_array foo $end
 $upscope $end
 ```
 
-### Expected Output: Struct-like
+### Expected VCD Output: Struct-like
 
 ```python
 from amaranth import *
@@ -167,7 +184,7 @@ $scope vhdl_record bar $end
 $upscope $end
 ```
 
-### Expected Output: Nested Aggregates
+### Expected VCD Output: Nested Aggregates
 
 ```python
 from amaranth import *
@@ -228,12 +245,7 @@ $upscope $end
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Should we continue to include the "flattened" [pure bit-vector] representation of aggregate signals in the VCD?
-- Does this feature need to be gated/opt-in by default?
-
-- The simulator currently depends on [westerndigitalcorporation/pyvcd](https://github.com/westerndigitalcorporation/pyvcd) when writing VCD files.
-  However, `pyvcd` only emits scope types defined by the VCD specification (and does not include the `vhdl_record`/`vhdl_array` scopes).
-  When implementing this RFC, should we continue relying on `pyvcd`, or does this warrant the addition of our own code in the simulator for writing VCD files?
+None.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
