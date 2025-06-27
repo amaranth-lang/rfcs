@@ -1,6 +1,6 @@
 - Start Date: 2025-06-02
 - RFC PR: [amaranth-lang/rfcs#79](https://github.com/amaranth-lang/rfcs/pull/79)
-- Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
+- Amaranth Issue: [amaranth-lang/amaranth#1612](https://github.com/amaranth-lang/amaranth/issues/1612)
 
 # Add `PortLike.with_direction`
 
