@@ -1,6 +1,6 @@
-- Start Date: (fill in with date at which the RFC is merged, YYYY-MM-DD)
+- Start Date: 2025-06-09
 - RFC PR: [amaranth-lang/rfcs#77](https://github.com/amaranth-lang/rfcs/pull/77)
-- Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
+- Amaranth Issue: [amaranth-lang/amaranth#1615](https://github.com/amaranth-lang/amaranth/issues/1615)
 
 # Stream port name conventions
 
@@ -17,7 +17,7 @@ Having a name convention for stream ports makes stream components easier to work
 ```
 pipeline = [component_a, component_b, component_c]
 for upstream, downstream in itertools.pairwise(pipeline):
-    wiring.connect(m, upstream.output, downstream.input)
+    wiring.connect(m, upstream.o, downstream.i)
 ```
 
 ## Guide- and reference-level explanation
@@ -25,8 +25,11 @@ for upstream, downstream in itertools.pairwise(pipeline):
 
 Document the following conventions:
 
-- When a component has a single primary input stream, the port should be named *TBD*.
-- When a component has a single primary output stream, the port should be named *TBD*.
+- Whenever the name of a stream member of the component interface includes an indication of its direction, the indication must match one of the following forms:
+  - For `In` members, either the complete name is `i` (for components that have one primary input), or the name must start with `i_` (for more complex components).
+  - For `Out` members, either the complete name is `o` (for components that have one primary input), or the name must start with `o_` (for more complex components).
+
+- It is also acceptable to have a name that doesn't indicate directionality explicitly, e.g. `requests` or `packets`.
 
 Update existing stream components to follow these conventions.
 
@@ -48,12 +51,7 @@ Stream ports in LiteX components are conventionally named `sink` and `source`.
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Which exact names should we settle on?
-  - `i` / `o`
-  - `input` / `output`
-  - `w_stream` / `r_stream`
-  - `sink` / `source`
-  - Others?
+None.
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
