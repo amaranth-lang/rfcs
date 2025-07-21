@@ -86,11 +86,14 @@ async def testbench(ctx):
 - `start(coro, *, background = False) -> Task`
   - Create and start a new task.
   - A background task can be temporarily made non-background with `ctx.critical()` like a regular testbench.
+  - Raise an exception if called before `__aenter__()` or after `__aexit__()`.
 - `async __aenter__() -> Self`
   - Return `self`.
+  - Raise an exception if called multiple times.
 - `async __aexit__(...)`
   - Wait for all non-background tasks to run to completion.
-  - Drop any incomplete background tasks.
+  - Once all non-background tasks are done, any remaining background tasks are dropped without returning or unwinding from their pending awaits.
+  - Raise an exception if called multiple times or if called without calling `__aenter__()` first.
 
 `Task` is added with the following methods:
 - `result() -> Any`
