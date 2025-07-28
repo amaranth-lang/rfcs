@@ -1,6 +1,6 @@
-- Start Date: (fill in with date at which the RFC is merged, YYYY-MM-DD)
+- Start Date: 2025-07-28
 - RFC PR: [amaranth-lang/rfcs#80](https://github.com/amaranth-lang/rfcs/pull/80)
-- Amaranth Issue: [amaranth-lang/amaranth#0000](https://github.com/amaranth-lang/amaranth/issues/0000)
+- Amaranth Issue: [amaranth-lang/amaranth#1620](https://github.com/amaranth-lang/amaranth/issues/1620)
 
 # Simulation task groups
 
@@ -96,6 +96,8 @@ async def testbench(ctx):
   - Raise an exception if called multiple times or if called without calling `__aenter__()` first.
 
 `Task` is added with the following methods:
+- `done() -> bool`
+  - Return whether the task has completed.
 - `result() -> Any`
   - Get the return value of a completed task.
   - Raise an exception if the task has not completed.
