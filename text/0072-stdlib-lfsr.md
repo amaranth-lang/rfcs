@@ -54,15 +54,15 @@ instance and providing the additional settings:
 
 * `output_width`: by default 1, but may be increased to generate multiple
   output bits in parallel per clock cycle
-* `structure`: either `"galois"` (the default) or `"fibonacci"` to select the
-  implementation technique; both generate the same sequence but with a
-  different time offset and sequence of internal states, and one or the
-  other may be preferable on some architectures
-* `init`: by default 1, but may be set to any non-zero initial state matching
-  the width of the LFSR register.
+* `structure`: either `lfsr.Structure.Galois` (the default) or
+  `lfsr.Structure.Fibbonacci` to select the implementation technique; both
+  generate the same sequence but with a different time offset and sequence of
+  internal states, and one or the other may be preferable on some architectures
 
 The `lfsr.Parameters` class can generate output bit sequences in software using
-its `compute()` method, which returns an infinite iterator.
+its `compute()` method, which returns a generator.
+
+`lfsr.Structure` is an `Enum` with two variants, `Galois` and `Fibbonacci`.
 
 To generate a hardware LFSR module, either call `create()` on `lfsr.Parameters`
 or manually construct an `lfsr.Processor`:
@@ -75,9 +75,11 @@ m.submodules.prbs7 = lfsr.Processor(params)
 m.submodules.prbs9 = lfsr.catalog.PRBS9().create()
 ```
 
-The LFSR module generates a new output on its `out` output every clock cycle.
-Use `ResetInserter` and `EnableInserter` if additional sequence control is
-required. The internal state is available as the `state` output.
+The LFSR module has an output stream that generates a new output on every cycle
+where `ready` is asserted. The module can be reset to its initial state using
+a `ResetInserter`. The internal state is available as the `state` output.
+Whenever the module is reset, its state is loaded from the `state_init` input,
+which defaults to `1`.
 
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -99,15 +101,15 @@ The proposed new library items are:
     * `output_width`: positive integer number of output bits to generate per clock cycle, default 1
     * `structure`: either `"galois"` or `"fibonacci"` (default), which type of
         implementation to generate
-    * `init`: positive integer initial state, default 1
 * `lfsr.Parameters` has the following methods:
     * `compute()` to compute output words in software, returning an infinite iterator
     * `create()` to generate an `lfsr.Processor`
     * `algorithm()` returns the `lfsr.Algorithm` used to create this instance
 * The `lfsr.Processor` class which is a `lib.wiring.Component` and implements
   the hardware generator, with the following signature:
-    * `out: Out(parameters.output_width)`
+    * `Out(stream.Signature(parameters.output_width, always_valid=True))`
     * `state: Out(algorithm.width)`
+    * `state_init: In(algorithm.width)`
 * An `lfsr.catalog` module which contains instances of `lfsr.Algorithm`
   corresponding to commonly used PRBS sequences and the 64b66b and 128b130b
   training sequences.
@@ -131,7 +133,7 @@ way that should be useful to almost all users of LFSRs. There is a fairly small
 design space for the actual hardware implementation and so it is unlikely an
 alternative design would be significantly more efficient.
 
-Some design alternatives include:
+The following alternatives were considered but rejected during review of this RFC:
 
 * We could simplify the implementation and API by only supporting Galois or
   only Fibonacci implementations, with the downside of potentially less
@@ -142,6 +144,9 @@ Some design alternatives include:
 * The split between Algorithm and Parameters mirrors that in `lib.crc`,
   but with fewer parameters we could consider merging them or making the
   Parameters settings be part of the Processor creation.
+* We could support internally-inverted LFSRs using XNOR operations, which allow
+  the all-0 state to be valid and so make initialisation easier, but decided
+  that this can be left to synthesis tools.
 
 ## Prior art
 [prior-art]: #prior-art
@@ -177,10 +182,6 @@ Before this RFC is ready to merge, we should resolve:
 
 * It might be useful to add logic for LFSR matching/error detection, which is
   a small addition and often useful
-* Not sure if we should add explicit ready/valid signals or a reset signal,
-  or leave those to EnableInserter/ResetInserter.
-* Should we support internally-inverted LFSRs using XNOR operations, permitting
-  a valid all-0s internal state to make initialisation easier e.g. on ASICs?
 * Parallel generation of bits might change the internal state representation,
   so we may need to only guarantee it matching expected values with single-bit
   outputs.
