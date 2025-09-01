@@ -25,7 +25,7 @@ A user writes a testbench for a simple `UARTPeripheral`. By attaching a `ToggleC
 
 ```python
 from amaranth.sim import Simulator
-from amaranth.sim._coverage import ToggleCoverageObserver
+from amaranth.sim.coverage import ToggleCoverageObserver
 from tests.test_utils import get_signal_full_paths
 from chipflow_digital_ip.io import UARTPeripheral
 
@@ -81,6 +81,65 @@ Finally, no deprecations or migration steps are required: toggle coverage is add
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 Toggle coverage is implemented as an observer attached to the simulation engine. For each signal, it stores the previous value, then on each tick it compares the old and new values bit by bit. If a bit changes from 0→1 or 1→0, it increments the corresponding counter. Each counter is stored in a dictionary keyed by signal identifier and bit index. Signal names are resolved into full hierarchical paths, ensuring results can be traced directly back to source code.
+
+#### API: `ToggleCoverageObserver`
+
+```python
+class ToggleCoverageObserver(Observer):
+    def __init__(self, state, signal_path_map: Optional[Dict[int, str]] = None, **kwargs): ...
+    def update_signal(self, timestamp: int, signal: Signal) -> None: ...
+    def update_memory(self, timestamp: int, memory, addr) -> None: ...
+    def get_results(self) -> Dict[str, Dict[int, Dict[ToggleDirection, int]]]: ...
+    def close(self, timestamp: int) -> None: ...
+```
+#### `ToggleDirection` Enum
+Represents the direction of a signal toggle:  
+- **`ZERO_TO_ONE`** — transition from logic 0 → 1  
+- **`ONE_TO_ZERO`** — transition from logic 1 → 0  
+
+#### Constructor
+
+- **`state`**: simulation state object, used to query signal values.  
+- **`signal_path_map`**: optional dict mapping `id(signal)` → hierarchical path string.  
+- **`**kwargs`**: forwarded to the base `Observer`.  
+
+#### Fields
+
+- **`_prev_values: Dict[int, int]`** — last observed values, keyed by signal ID.  
+- **`_toggles: Dict[int, Dict[int, Dict[ToggleDirection, int]]]`** — per-signal, per-bit toggle counters.  
+- **`_signal_names: Dict[int, str]`** — human-readable names for reporting.  
+- **`_signal_path_map: Dict[int, str]`** — mapping of signal IDs to full paths.  
+
+#### Methods
+
+- **`update_signal(timestamp, signal)`**  
+  Updates toggle counters by comparing current vs. previous values, bit by bit.  
+
+- **`update_memory(timestamp, memory, addr)`**  
+  Currently a placeholder with no effect.  
+
+- **`get_results()`**    Returns structured results:  
+  ```python
+  {
+      "signal_name": {
+          bit_index: {
+              ToggleDirection.ZERO_TO_ONE: count,
+              ToggleDirection.ONE_TO_ZERO: count
+          }
+      }
+  }
+- **`close(timestamp)`** Prints a formatted toggle coverage report to stdout.
+#### Helper functions 
+##### `collect_all_signals(obj)` Helper
+Recursively traverses a design object to collect all `Signal` instances.  
+- Skips private attributes (those starting with `_`).  
+- Follows `submodules` if present (supports both dicts and iterables).  
+- Returns: a list of discovered `Signal` objects.  
+
+##### `get_signal_full_paths(design)` Helper
+Builds hierarchical names for all signals in a design.  
+- Iterates through `design.fragments` and their signal names.  
+- Returns: a dictionary mapping `id(signal)` → full hierarchical path string.  
 
 #### Example Workflow
 
@@ -155,7 +214,6 @@ Amaranth takes a slightly different approach. Its goal is to provide consistent 
 [unresolved-questions]: #unresolved-questions
 - **Output formats.** Is a plain text report sufficient for the first version, or should JSON export be included? Should UCIS/LCOV output be in scope for this RFC or deferred to later proposals?  
 - **Signal filtering.** Should include/exclude lists and a maximum bit-width cap be defined in this RFC, or added as extensions after the basic observer is merged?  
-- **Treatment of special values.** For future Verilator integration, X and Z might appear in signals. How should signals with `X` or `Z` states be handled in toggle counting? Are they out of scope for now?  
 - **Interaction with other coverage types.** Since work is also underway on statement and block coverage, should toggle coverage eventually share a common reporting interface with these metrics?
 - **Scope of implementation.** Should this RFC cover only the Python simulator (current implementation) or also include Verilator integration? If not, how should future work on Verilator support be tracked?  
 
@@ -167,6 +225,6 @@ The most natural next step is to integrate toggle coverage with other coverage m
 
 Toggle coverage could also participate in hierarchical aggregation, where reports summarize coverage per module, instance, or subsystem rather than just per signal bit.
 
-Over time, toggle coverage might evolve into a more configurable feature. Examples include filtering (include/exclude lists, maximum bus width), or selective depth of hierarchy in reports. For backends that support four-state logic, there is also room to extend the metric to handle `X` and `Z` values explicitly, either as ignored states or as separate transition classes.
+Over time, toggle coverage might evolve into a more configurable feature. Examples include filtering (include/exclude lists, maximum bus width), or selective depth of hierarchy in reports.
 
 Ultimately, toggle coverage can serve as a foundation for more advanced metrics. While the initial implementation focuses on simple per-bit transitions, future work can unify it with broader coverage reporting, add richer configuration options, and extend support across backends. This evolution would position toggle coverage not only as a basic completeness check but also as an integral part of a comprehensive verificatiosn framework.
