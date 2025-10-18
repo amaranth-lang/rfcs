@@ -1,0 +1,35 @@
+on:
+  push:
+    branches:
+      - main
+name: Publish
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out source code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Install mdbook
+      run: |
+        mkdir mdbook
+        curl -Lf https://github.com/rust-lang/mdBook/releases/download/v0.4.26/mdbook-v0.4.26-x86_64-unknown-linux-gnu.tar.gz | tar -xz --directory=./mdbook
+        echo `pwd`/mdbook >> $GITHUB_PATH
+    - name: Generate book
+      run: |
+        ./generate-book.py
+    # This cannot be safely offered before https://github.com/rust-lang/mdBook/issues/1238 is fixed.
+    # - if: ${{ github.repository != 'amaranth-lang/rfcs' }}
+    #   name: Publish artifact to gh-pages branch in this repository
+    #   uses: JamesIves/github-pages-deploy-action@releases/v4
+    #   with:
+    #     folder: book/
+    #     branch: ${{ github.repository == 'amaranth-lang/rfcs' && 'pages' || 'gh-pages' }}
+    #     single-commit: true
+    - if: ${{ github.repository == 'amaranth-lang/rfcs' }}
+      name: Publish artifact to https://amaranth-lang.org/rfcs/
+      run: |
+        set -o pipefail
+        cd book/
+        tar c * | zstd -T0 -1 | curl https://amaranth-lang.org/rfcs/ -X PUT -H "Authorization: Pages ${{ secrets.GREBEDOC_TOKEN }}" -H "Content-Type: application/x-tar+zstd" -T -
