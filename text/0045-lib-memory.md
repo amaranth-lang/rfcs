@@ -178,4 +178,4 @@ The following other options can be explored:
 ## Acknowledgements
 [acknowledgements]: #acknowledgements
 
-@wanda-phi and @jfng provided valuable feedback during drafting of this proposal.
+@wanda-phi and @megng provided valuable feedback during drafting of this proposal.
