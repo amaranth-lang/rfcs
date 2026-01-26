@@ -506,15 +506,15 @@ To this end, a class `amaranth.lib.wiring.Component` is introduced:
 ## Naming questions
 
 - Should `amaranth.lib.wiring` be called something else, like `amaranth.lib.bus` or `amaranth.lib.component`?
-  - bus is short, but not every interface is a bus interface; component (or module, really) puts too much emphasis on the things being interfaced, rather than the interfaces (@jfng)
-  - i wouldn't want the bus keyword to already be taken in my namespaces (@jfng)
+  - bus is short, but not every interface is a bus interface; component (or module, really) puts too much emphasis on the things being interfaced, rather than the interfaces (@megng)
+  - i wouldn't want the bus keyword to already be taken in my namespaces (@megng)
   - I guess my point is mostly that bus is not the opposite of data, but wiring is (@whitequark)
   - I don't like how long "component" is (@whitequark)
 - Should `Signature.compatible` be named something else, like `Signature.is_implemented_by`, `Signature.is_compliant`, `Signature.complies_with`?
-  - `Signature.compatible` misses an `is_` and does not look like a query method (@jfng)
+  - `Signature.compatible` misses an `is_` and does not look like a query method (@megng)
   - I mean, "compatible" could mean that two signatures could be connected together. when checking if an object is compliant to a signature, directions also matters (@zyp)
   - `Signature.complies_with` reverses subject and object (@zyp)
-  - `Signature.is_implemented_by` is verbose (@jfng)
+  - `Signature.is_implemented_by` is verbose (@megng)
 - Should `amaranth.lib.wiring.forward` be named something else, like `amaranth.lib.wiring.forwarded` or `amaranth.lib.wiring.forwarding` or `amaranth.lib.wiring.flip` or `amaranth.lib.wiring.transpose` or `amaranth.lib.wiring.transpose` or `amaranth.lib.wiring.inner`?
   - having two essentially unrelated operations called `flip` when one is already confusing is too much (@whitequark)
   - reflective programming is a thing (@zyp)

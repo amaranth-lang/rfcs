@@ -11,7 +11,7 @@ The responsibility for evolving an Amaranth "subsystem" (a clearly defined part 
 - **Core**: Catherine [@whitequark][]
   - The "core" subsystem includes the HDL frontend, backend, and simulator, as well as the build and platform systems.
   - This covers the [amaranth-lang/amaranth][] repository and the `amaranth` Python package.
-- **SoC**: Jean-François [@jfng][]
+- **SoC**: Mégane [@megng][]
   - The "SoC" subsystem includes the SoC infrastructure.
   - This covers the [amaranth-lang/amaranth-soc][] repository and the `amaranth_soc` Python package.
 - Other repositories and Python packages are not currently covered by the RFC process and changes are implemented on an ad-hoc basis.
@@ -20,7 +20,7 @@ The responsibility for evolving an Amaranth "subsystem" (a clearly defined part 
 [amaranth-lang/amaranth-soc]: https://github.com/amaranth-lang/amaranth-soc
 
 [@whitequark]: https://github.com/whitequark
-[@jfng]: https://github.com/jfng
+[@megng]: https://github.com/megng1
 
 ## Table of Contents
 [Table of Contents]: #table-of-contents
